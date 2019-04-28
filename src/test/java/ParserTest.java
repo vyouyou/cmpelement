@@ -29,4 +29,10 @@ public class ParserTest {
     public void symbolTest(){
         Assert.assertEquals(parser.symbol("@i",CommandTypeEnum.A_COMMAND),"i");
     }
+
+    @Test
+    public void parserTest(){
+        parser = new Parser("D:\\youyou\\nand2tetris\\projects\\06\\add\\Add.asm");
+        parser.parse();
+    }
 }

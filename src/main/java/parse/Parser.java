@@ -77,13 +77,14 @@ public class Parser {
                                 table.addEntry(token, ramAddress++);
                             }
                         }
+                        sb.append(binary + "\r\n");
                     default:
                 }
             });
+            System.out.println(sb);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println();
     }
 
     public CommandTypeEnum commandType(String command) {
