@@ -1,0 +1,16 @@
+class Apple{
+    field String name;
+    static String color;
+
+    constructor Apple new(String name){
+        let name = name;
+        let color = "green";
+        return this;
+    }
+
+    method String getName(){
+        return name;
+    }
+
+
+}

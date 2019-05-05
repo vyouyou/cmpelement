@@ -1,8 +1,8 @@
 package parse;
 
 import javafx.scene.control.Tab;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import utils.FileUtils;
 
 import java.io.*;
 import java.util.List;
@@ -26,13 +26,11 @@ public class Parser {
         table = new Table();
     }
 
-    private List<String> readFile() throws IOException {
-        return FileUtils.readLines(new File(path), "UTF-8");
-    }
+
 
     public void parse() {
         try {
-            List<String> commands = readFile();
+            List<String> commands = FileUtils.readFile(path);
             commands.stream().forEach(command -> {
                 CommandTypeEnum type = commandType(command);
                 switch (type) {

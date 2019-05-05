@@ -1,0 +1,10 @@
+class Main{
+    function void main(){
+        var Apple apple;
+        var string name;
+        let apple = Apple.new("i am apple");
+        let name = apple.getName();
+        do Output.printString(name);
+        return;
+    }
+}
