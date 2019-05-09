@@ -16,7 +16,7 @@ public interface Constants {
     /**
      * 符号正则
      */
-    String SYMBOL_PATTERN = "({|}|\\(|\\)|\\[|\\]|\\.|,|;|\\+|\\-|\\*|\\/|&|\\||<|>|=|~)";
+    String SYMBOL_PATTERN = "((?<=(\\{|\\}|\\(|\\)|\\[|\\]|\\.|,|;|\\+|\\-|\\*|\\/|&|\\||<|>|=|~))|(?=(\\{|\\}|\\(|\\)|\\[|\\]|\\.|,|;|\\+|\\-|\\*|\\/|&|\\||<|>|=|~)))";
     /**
      * 32767
      */
@@ -25,4 +25,13 @@ public interface Constants {
      * identify pattern
      */
     String IDENTIFY_PATTERN = "^[^\\d]([a-z]|[0-1]|_)*$";
+    /**
+     * string pattern
+     */
+    String STRING_PATTERN = "^\"\\w*\"$";
+
+    /**
+     * blank
+     */
+    String BLANK_PATTERN = "\\t+|\\r+|\\n+";
 }

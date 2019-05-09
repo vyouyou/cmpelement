@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<tokens>
+  <identifier>class</identifier>
+  <symbol>VmParser</symbol>
+  <identifier>{</identifier>
+  <identifier>if</identifier>
+  <identifier>(</identifier>
+  <identifier>x</identifier>
+  <identifier><</identifier>
+  <intgerConstant>153</intgerConstant>
+  <identifier>)</identifier>
+  <identifier>{</identifier>
+  <identifier>let</identifier>
+  <identifier>city</identifier>
+  <identifier>=</identifier>
+  <stringConstant>paris</stringConstant>
+  <identifier>;</identifier>
+  <identifier>}</identifier>
+  <identifier>}</identifier>
+</tokens>
