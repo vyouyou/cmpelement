@@ -8,6 +8,6 @@ import vmparse.JackTokenizer;
 public class JackTokenizerTest {
     @Test
     public void genTokenTest(){
-        JackTokenizer jackTokenizer = new JackTokenizer("D:\\javaprj\\cmpelement\\src\\test\\resource\\VmParser.vm");
+        JackTokenizer jackTokenizer = new JackTokenizer("D:\\javaprj\\cmpelement\\src\\test\\resource\\Main.jack");
     }
 }

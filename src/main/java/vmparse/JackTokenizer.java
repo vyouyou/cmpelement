@@ -1,10 +1,6 @@
 package vmparse;
 
 import com.google.common.collect.Lists;
-import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
-import jdk.internal.util.xml.XMLStreamException;
-import jdk.nashorn.internal.parser.TokenType;
-import jdk.nashorn.internal.runtime.regexp.joni.Regex;
 import org.apache.commons.lang3.StringUtils;
 import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
@@ -17,9 +13,12 @@ import vmparse.constants.KeyWordEnum;
 import vmparse.constants.TokenTypeEnum;
 
 import java.io.*;
-import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static vmparse.constants.Constants.STR_P;
 
 /**
  * @Author qishiyu
@@ -39,11 +38,16 @@ public class JackTokenizer {
     private List<String> genTokens(List<String> stringList) {
         List<String> tokens = Lists.newArrayList();
         stringList.stream().forEach((item) -> {
-            for (String s : item.split(Constants.SYMBOL_PATTERN)) {
-                tokens.addAll(Lists.newArrayList(s.split(" ")).stream().filter((str) -> {
-                    str = str.trim();
-                    return StringUtils.isNotEmpty(str);
-                }).collect(Collectors.toList()));
+            for (String s : item.split(Constants.SYMBOL_SPLIT_PATTERN)) {
+                Matcher matcher = STR_P.matcher(s);
+                if (matcher.find()) {
+                    tokens.add(s);
+                } else {
+                    tokens.addAll(Lists.newArrayList(s.split(" ")).stream().filter((str) -> {
+                        str = str.trim();
+                        return StringUtils.isNotEmpty(str);
+                    }).collect(Collectors.toList()));
+                }
             }
         });
         return tokens;
@@ -81,21 +85,17 @@ public class JackTokenizer {
         e.setText(token);
     }
 
-    public static void main(String[] args) {
-        System.out.println("\"aaa\"".replaceAll("\"",""));
-    }
-
     private TokenTypeEnum getTokenType(String str) {
+        if (str.matches(Constants.KEYWORD_PATTERN)) {
+            return TokenTypeEnum.KEYWORD;
+        }
         if (str.matches(Constants.SYMBOL_PATTERN)) {
             return TokenTypeEnum.SYMBOL;
         }
         if (str.matches(Constants.IDENTIFY_PATTERN)) {
             return TokenTypeEnum.IDENTIFIER;
         }
-        if (str.matches(Constants.KEYWORD_PATTERN)) {
-            return TokenTypeEnum.KEYWORD;
-        }
-        if (str.matches(Constants.STRING_PATTERN)) {
+        if (STR_P.matcher(str).find()) {
             return TokenTypeEnum.STRING_CONST;
         }
         if (str.matches(Constants.INTEGER_PATTERN)) {

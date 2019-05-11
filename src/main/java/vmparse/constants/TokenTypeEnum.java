@@ -14,7 +14,7 @@ public enum TokenTypeEnum {
     KEYWORD("keyword"),
     SYMBOL("symbol"),
     IDENTIFIER("identifier"),
-    INT_CONST("intgerConstant"),
+    INT_CONST("integerConstant"),
     STRING_CONST("stringConstant");
 
     @Getter

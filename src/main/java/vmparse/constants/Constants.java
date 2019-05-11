@@ -1,5 +1,7 @@
 package vmparse.constants;
 
+import java.util.regex.Pattern;
+
 /**
  * @Author qishiyu
  * @create 2019/5/5 19:49
@@ -16,7 +18,9 @@ public interface Constants {
     /**
      * 符号正则
      */
-    String SYMBOL_PATTERN = "((?<=(\\{|\\}|\\(|\\)|\\[|\\]|\\.|,|;|\\+|\\-|\\*|\\/|&|\\||<|>|=|~))|(?=(\\{|\\}|\\(|\\)|\\[|\\]|\\.|,|;|\\+|\\-|\\*|\\/|&|\\||<|>|=|~)))";
+    String SYMBOL_SPLIT_PATTERN = "((?<=(\\{|\\}|\\(|\\)|\\[|\\]|\\.|,|;|\\+|\\-|\\*|\\/|&|\\||<|>|=|~))|(?=(\\{|\\}|\\(|\\)|\\[|\\]|\\.|,|;|\\+|\\-|\\*|\\/|&|\\||<|>|=|~)))";
+
+    String SYMBOL_PATTERN = "\\{|\\}|\\(|\\)|\\[|\\]|\\.|,|;|\\+|\\-|\\*|\\/|&|\\||<|>|=|~";
     /**
      * 32767
      */
@@ -24,11 +28,14 @@ public interface Constants {
     /**
      * identify pattern
      */
-    String IDENTIFY_PATTERN = "^[^\\d]([a-z]|[0-1]|_)*$";
+    String IDENTIFY_PATTERN = "^[^\\d]([a-z]|[A-Z]|[0-1]|_)*$";
     /**
      * string pattern
      */
-    String STRING_PATTERN = "^\"\\w*\"$";
+    String STRING_PATTERN = "\".*\"";
+
+    Pattern STR_P = Pattern.compile(Constants.STRING_PATTERN);
+
 
     /**
      * blank
