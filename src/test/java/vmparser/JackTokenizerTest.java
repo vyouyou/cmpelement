@@ -1,3 +1,5 @@
+package vmparser;
+
 import org.junit.Test;
 import vmparse.JackTokenizer;
 

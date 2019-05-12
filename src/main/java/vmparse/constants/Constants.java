@@ -35,10 +35,9 @@ public interface Constants {
     String STRING_PATTERN = "\".*\"";
 
     Pattern STR_P = Pattern.compile(Constants.STRING_PATTERN);
-
-
     /**
      * blank
      */
     String BLANK_PATTERN = "\\t+|\\r+|\\n+";
+
 }

@@ -1,0 +1,16 @@
+package vmparser;
+
+import org.junit.Test;
+import vmparse.CompilationEngine;
+
+/**
+ * @Author qishiyu
+ * @create 2019/5/11 16:37
+ */
+public class CompilationEngineTest {
+    @Test
+    public void compileClassTest(){
+        CompilationEngine engine = new CompilationEngine("rss.xml");
+        engine.startParse("rs.xml");
+    }
+}

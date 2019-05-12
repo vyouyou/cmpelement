@@ -59,21 +59,7 @@ public class JackTokenizer {
         tokens.forEach((token) -> {
             insertDom(tokensEle, token, getTokenType(token));
         });
-        File file = new File("rss.xml");
-        try {
-            OutputFormat format = OutputFormat.createPrettyPrint();
-            format.setEncoding("UTF-8");
-            XMLWriter writer = new XMLWriter(new FileOutputStream(file), format);
-            writer.setEscapeText(false);
-            writer.write(document);
-            writer.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        FileUtils.writeIntoXml("fss.xml", document);
     }
 
     private void insertDom(Element rootElement, String token, TokenTypeEnum tokenTypeEnum) {
