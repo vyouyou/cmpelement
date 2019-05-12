@@ -86,7 +86,17 @@ public class CompilationEngine {
         copyElement(subRoutineEle, 3);
         //处理参数列表
         compileParameterList(subRoutineEle);
+        // 处理 )
         copyElement(subRoutineEle, 1);
+        Element subRoutineBodyEle = DocumentHelper.createElement("subroutineBody");
+        subRoutineEle.add(subRoutineBodyEle);
+        // 处理 {
+        copyElement(subRoutineBodyEle, 1);
+        while (getToken(nodeIndex).getText().equals(KeyWordEnum.VAR.getCode())) {
+            compileVar(subRoutineBodyEle);
+        }
+        // statementLists
+        compileStatementList(subRoutineBodyEle);
 
     }
 
@@ -106,56 +116,105 @@ public class CompilationEngine {
     /**
      * do
      */
-    private void compileDo() {
+    private void compileDo(Element parentEle) {
     }
 
     /**
      * let
      */
-    private void compileLet() {
+    private void compileLet(Element parentEle) {
+        Element letEle = createKeywordElement(KeyWordEnum.LET);
+        parentEle.add(letEle);
+        do {
+            copyElement(letEle);
+        } while (!getToken(nodeIndex).getText().equals("="));
+        compileExpression(letEle);
+    }
+
+    /**
+     * var
+     */
+    private void compileVar(Element parentEle) {
+        Element varEle = createKeywordElement(KeyWordEnum.VAR);
+        parentEle.add(varEle);
+        do {
+            copyElement(varEle);
+        } while (!getToken(nodeIndex).getText().equals(";"));
     }
 
     /**
      * while
      */
-    private void compileWhile() {
+    private void compileWhile(Element parentEle) {
     }
 
     /**
      * return
      */
-    private void compileReturn() {
+    private void compileReturn(Element parentEle) {
     }
 
     /**
      * if
      */
-    private void compileIf() {
-    }
-
-    /**
-     * 表达式 let i = (1 + 2 ) 后面为 expression
-     */
-    private void compileExpression() {
-    }
-
-    /**
-     * 用于expression中的 参数 ( 1 + 2) 则 term  1
-     */
-    private void compileTerm() {
+    private void compileIf(Element parentEle) {
     }
 
     /**
      * 表达式列表 ，用于方法调用中 fun(a,b)
      */
-    private void compileExpressionList() {
+    private void compileStatementList(Element parentEle) {
+        Element statementListEle = DocumentHelper.createElement("statements");
+        parentEle.add(statementListEle);
+        // 当前节点
+        for (; ; ) {
+            Token token = getToken(nodeIndex);
+            if (token.getName().equals(TokenTypeEnum.KEYWORD.getCode())) {
+                String text = token.getText();
+                if (text.equals(KeyWordEnum.LET.getCode())) {
+                    compileLet(statementListEle);
+                } else if (text.equals(KeyWordEnum.VAR.getCode())) {
+                    compileVar(statementListEle);
+                } else if (text.equals(KeyWordEnum.DO.getCode())) {
+                    compileDo(statementListEle);
+                } else if (text.equals(KeyWordEnum.IF.getCode())) {
+                    compileIf(statementListEle);
+                } else if (text.equals(KeyWordEnum.WHILE.getCode())) {
+                    compileWhile(statementListEle);
+                } else if (text.equals(KeyWordEnum.RETURN.getCode())) {
+                    compileReturn(statementListEle);
+                } else {
+                    System.out.println("遇到无法识别的关键字");
+                    break;
+                }
+            }
+        }
+    }
+
+    private void compileExpressionList(Element parentEle) {
+
     }
 
     /**
+     * 表达式 let i = (1 + 2 ) 后面为 expression
+     */
+    private void compileExpression(Element parentEle) {
+        Element expressionEle = DocumentHelper.createElement("expression");
+    }
+
+    /**
+     * 用于expression中的 参数 ( 1 + 2) 则 term  1
+     */
+    private void compileTerm(Element parentEle) {
+    }
+
+
+    /**
      * 获取class element
+     *
      * @return
      */
-    private Element getClassElement(){
+    private Element getClassElement() {
         return targetDocument.getRootElement();
     }
 
@@ -169,9 +228,13 @@ public class CompilationEngine {
         return DocumentHelper.createElement(keyWordEnum.getTagName());
     }
 
+    private void copyElement(Element parentEle) {
+        parentEle.add(getElementByIndex(nodeIndex++));
+    }
+
     private void copyElement(Element parentEle, int num) {
         for (int i = 0; i < num; i++) {
-            parentEle.add(getElementByIndex(nodeIndex++));
+            copyElement(parentEle);
         }
     }
 
