@@ -1,6 +1,7 @@
 package vmparse;
 
 import com.sun.org.apache.xpath.internal.compiler.Keywords;
+import jdk.nashorn.internal.parser.TokenType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.dom4j.Document;
@@ -200,12 +201,26 @@ public class CompilationEngine {
      */
     private void compileExpression(Element parentEle) {
         Element expressionEle = DocumentHelper.createElement("expression");
+        parentEle.add(expressionEle);
+        String tokenName = getToken(nodeIndex).getName();
+        if (tokenName.equals(TokenTypeEnum.IDENTIFIER.getCode()) ||
+                tokenName.equals(TokenTypeEnum.INT_CONST.getCode()) ||
+                tokenName.equals(TokenTypeEnum.STRING_CONST.getCode())
+        ) {
+            compileTerm(expressionEle);
+        }
     }
 
     /**
      * 用于expression中的 参数 ( 1 + 2) 则 term  1
      */
     private void compileTerm(Element parentEle) {
+        Element termEle = DocumentHelper.createElement("term");
+        copyElement(termEle);
+        String text = getToken().getText();
+        if (text.equals("(")||text.equals(".")) {
+
+        }
     }
 
 
@@ -236,6 +251,10 @@ public class CompilationEngine {
         for (int i = 0; i < num; i++) {
             copyElement(parentEle);
         }
+    }
+
+    private Token getToken() {
+        return getToken(nodeIndex);
     }
 
     private Token getToken(int index) {
