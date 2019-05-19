@@ -38,29 +38,8 @@ public class CompilationEngine {
 
     public void startParse(String targetName) {
         targetDocument = DocumentHelper.createDocument();
-        while (nodeIndex < nodeList.size()) {
-            Element ele = nodeList.get(nodeIndex);
-            resolveToken(ele.getName(), ele.getText());
-        }
+
         FileUtils.writeIntoXml(targetName, targetDocument);
-    }
-
-    /**
-     * 处理token
-     *
-     * @param name
-     * @param text
-     */
-    private void resolveToken(String name, String text) {
-        if (name.equals(TokenTypeEnum.KEYWORD.getCode())) {
-            if (text.equals(KeyWordEnum.CLASS.getCode())) {
-                compileClass();
-            }
-            if (text.equals(KeyWordEnum.FUNCTION.getCode())) {
-                compileSubroutine();
-            }
-        }
-
     }
 
     /**
@@ -70,19 +49,43 @@ public class CompilationEngine {
         Element classEle = createKeywordElement(KeyWordEnum.CLASS);
         targetDocument.setRootElement(classEle);
         copyElement(classEle, 3);
+        while ("}".equals(getToken().getName())) {
+            String name = getToken().getName();
+            if (name.equals(KeyWordEnum.STATIC.getCode()) ||
+                    name.equals(KeyWordEnum.FIELD.getCode())) {
+                compileClassVarDec(classEle);
+            } else if (name.equals(KeyWordEnum.METHOD.getCode()) ||
+                    name.equals(KeyWordEnum.FUNCTION.getCode()) ||
+                    name.equals(KeyWordEnum.CONSTRUCTOR.getCode())) {
+                compileSubroutine(classEle);
+            }
+        }
     }
 
     /**
      * 编译静态变量或者字段
      */
-    private void compileClassVarDec() {
+    private void compileClassVarDec(Element parentEle) {
+        Element classVarEle = DocumentHelper.createElement("classVarDec");
+        parentEle.add(classVarEle);
+        // static field
+        copyElement(classVarEle, 2);
+        do {
+            if (";".equals(getToken().getText())) {
+                copyElement(classVarEle);
+                break;
+            } else if (",".equals(getToken().getText())) {
+                copyElement(classVarEle, 2);
+            }
+        } while (true);
     }
 
     /**
      * 编译方法
      */
-    private void compileSubroutine() {
+    private void compileSubroutine(Element parentEle) {
         Element subRoutineEle = createKeywordElement(KeyWordEnum.FUNCTION);
+        parentEle.add(subRoutineEle);
         getClassElement().add(subRoutineEle);
         copyElement(subRoutineEle, 3);
         //处理参数列表
@@ -116,8 +119,16 @@ public class CompilationEngine {
 
     /**
      * do
+     * do aaa(exp1,exp2)
      */
     private void compileDo(Element parentEle) {
+        Element doEle = createKeywordElement(KeyWordEnum.DO);
+        parentEle.add(doEle);
+        do {
+            copyElement(doEle);
+        } while (!getToken().getText().equals("("));
+        compileExpressionList(doEle);
+        copyElement(doEle, 2);
     }
 
     /**
@@ -147,19 +158,53 @@ public class CompilationEngine {
      * while
      */
     private void compileWhile(Element parentEle) {
+        Element whileEle = createKeywordElement(KeyWordEnum.WHILE);
+        // while (
+        copyElement(whileEle, 2);
+        compileExpression(whileEle);
+        // )  }
+        copyElement(whileEle, 2);
+        compileStatementList(whileEle);
     }
 
     /**
      * return
      */
     private void compileReturn(Element parentEle) {
+        Element returnEle = createKeywordElement(KeyWordEnum.RETURN);
+        parentEle.add(returnEle);
+        copyElement(returnEle);
+        if (":".equals(getToken().getText())) {
+            compileExpression(returnEle);
+        }
+        // copy ;
+        copyElement(returnEle);
     }
 
     /**
      * if
      */
     private void compileIf(Element parentEle) {
+        Element ifEle = createKeywordElement(KeyWordEnum.IF);
+        parentEle.add(ifEle);
+        // if  (
+        copyElement(ifEle, 2);
+        compileExpression(ifEle);
+        // )  {
+        copyElement(ifEle, 2);
+        compileStatementList(ifEle);
+        // }
+        copyElement(ifEle);
+        //compile else
+        if (KeyWordEnum.ELSE.getCode().equals(getToken().getText())) {
+            // else {
+            copyElement(parentEle, 2);
+            compileStatementList(parentEle);
+            // }
+            copyElement(parentEle);
+        }
     }
+
 
     /**
      * 表达式列表 ，用于方法调用中 fun(a,b)
@@ -193,7 +238,12 @@ public class CompilationEngine {
     }
 
     private void compileExpressionList(Element parentEle) {
-
+        Element expListEle = DocumentHelper.createElement("expressionList");
+        while (!")".equals(getToken().getText())) {
+            parentEle.add(expListEle);
+            compileExpression(expListEle);
+            copyElement(expListEle);
+        }
     }
 
     /**
@@ -213,13 +263,85 @@ public class CompilationEngine {
 
     /**
      * 用于expression中的 参数 ( 1 + 2) 则 term  1
+     * a.b(<explist>c,d,e</explist>)
+     * [ <term>i</term> ]
+     * <term>a.b(c)</term>
      */
     private void compileTerm(Element parentEle) {
         Element termEle = DocumentHelper.createElement("term");
+        // 根据这个token来判断下来做的事情
+        Token curToken = getToken();
         copyElement(termEle);
-        String text = getToken().getText();
-        if (text.equals("(")||text.equals(".")) {
+        String text = curToken.getText();
+        String type = curToken.getName();
+        if (type.equals(TokenTypeEnum.IDENTIFIER.getCode())) {
+            // 如  a() a.b() a[i]
+            copyElement(termEle);
+            Token nextToken = getToken();
+            if ("(".equals(nextToken.getText()) || ".".equals(nextToken.getText())) {
+                this.compilePartCall(termEle);
+            } else if ("[".equals(nextToken.getText())) {
+                compileExpression(termEle);
+                if ("]".equals(getToken().getText())) {
+                    copyElement(termEle);
+                } else {
+                    System.out.println("遇到了非法的字符");
+                }
+            } else {
+                nodeIndex--;
+            }
+        } else if (type.equals(TokenTypeEnum.STRING_CONST.getCode()) ||
+                type.equals(TokenTypeEnum.INT_CONST.getCode())) {
+            copyElement(termEle);
+        } else {
+            if ("-".equals(text) || "~".equals(text)) {
+                copyElement(termEle);
+                compileTerm(termEle);
+            } else if ("null".equals(text)
+                    || "false".equals(text)
+                    || "true".equals(text)
+                    || "this".equals(text)
+            ) {
+                copyElement(termEle);
+            } else if ("(".equals(text)) {
+                copyElement(termEle);
+                compileExpressionList(termEle);
+                if (!")".equals(getToken().getText())) {
+                    System.out.println("can not get )");
+                }
+            } else {
+                System.out.println("term get unExpect symbol");
+            }
+        }
 
+
+    }
+
+    private void compilePartCall(Element parentEle) {
+        Token token = getToken();
+        String text = token.getText();
+        if ("(".equals(text)) {
+            copyElement(parentEle);
+            compileExpressionList(parentEle);
+            if (")".equals(getToken().getText())) {
+                copyElement(parentEle);
+            } else {
+                System.out.println("error is compilePartCall miss )");
+            }
+        } else if (".".equals(text)) {
+            copyElement(parentEle);
+            if (!TokenTypeEnum.IDENTIFIER.getCode().equals(getToken().getName())) {
+                System.out.println("error is compilePartCall not IDENTIFIER");
+            }
+            copyElement(parentEle);
+            if (!"(".equals(getToken().getText())) {
+                System.out.println("error is compilePartCall not has (");
+            }
+            copyElement(parentEle);
+            compileExpressionList(parentEle);
+            if (!")".equals(getToken().getText())) {
+                System.out.println("error is compilePartCall not has )");
+            }
         }
     }
 
