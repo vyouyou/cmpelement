@@ -1,15 +1,15 @@
 package vmparse;
 
-import com.sun.org.apache.xpath.internal.compiler.Keywords;
-import jdk.nashorn.internal.parser.TokenType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import utils.FileUtils;
+import vmparse.constants.Constants;
 import vmparse.constants.KeyWordEnum;
 import vmparse.constants.TokenTypeEnum;
 
@@ -24,6 +24,7 @@ public class CompilationEngine {
     private int nodeIndex = 0;
     List<Element> nodeList;
     private Document targetDocument;
+    private String targetName;
 
     public CompilationEngine(String path) {
         SAXReader reader = new SAXReader();
@@ -37,8 +38,9 @@ public class CompilationEngine {
     }
 
     public void startParse(String targetName) {
+        this.targetName = targetName;
         targetDocument = DocumentHelper.createDocument();
-
+        compileClass();
         FileUtils.writeIntoXml(targetName, targetDocument);
     }
 
@@ -49,17 +51,18 @@ public class CompilationEngine {
         Element classEle = createKeywordElement(KeyWordEnum.CLASS);
         targetDocument.setRootElement(classEle);
         copyElement(classEle, 3);
-        while ("}".equals(getToken().getName())) {
-            String name = getToken().getName();
-            if (name.equals(KeyWordEnum.STATIC.getCode()) ||
-                    name.equals(KeyWordEnum.FIELD.getCode())) {
+        while (!"}".equals(getToken().getText())) {
+            String text = getToken().getText();
+            if (text.equals(KeyWordEnum.STATIC.getCode()) ||
+                    text.equals(KeyWordEnum.FIELD.getCode())) {
                 compileClassVarDec(classEle);
-            } else if (name.equals(KeyWordEnum.METHOD.getCode()) ||
-                    name.equals(KeyWordEnum.FUNCTION.getCode()) ||
-                    name.equals(KeyWordEnum.CONSTRUCTOR.getCode())) {
+            } else if (text.equals(KeyWordEnum.METHOD.getCode()) ||
+                    text.equals(KeyWordEnum.FUNCTION.getCode()) ||
+                    text.equals(KeyWordEnum.CONSTRUCTOR.getCode())) {
                 compileSubroutine(classEle);
             }
         }
+        copyElement(classEle, 1);
     }
 
     /**
@@ -69,7 +72,7 @@ public class CompilationEngine {
         Element classVarEle = DocumentHelper.createElement("classVarDec");
         parentEle.add(classVarEle);
         // static field
-        copyElement(classVarEle, 2);
+        copyElement(classVarEle, 3);
         do {
             if (";".equals(getToken().getText())) {
                 copyElement(classVarEle);
@@ -86,8 +89,7 @@ public class CompilationEngine {
     private void compileSubroutine(Element parentEle) {
         Element subRoutineEle = createKeywordElement(KeyWordEnum.FUNCTION);
         parentEle.add(subRoutineEle);
-        getClassElement().add(subRoutineEle);
-        copyElement(subRoutineEle, 3);
+        copyElement(subRoutineEle, 4);
         //处理参数列表
         compileParameterList(subRoutineEle);
         // 处理 )
@@ -101,7 +103,8 @@ public class CompilationEngine {
         }
         // statementLists
         compileStatementList(subRoutineBodyEle);
-
+        // 处理 }
+        copyElement(subRoutineBodyEle);
     }
 
 
@@ -112,7 +115,7 @@ public class CompilationEngine {
         final String PARAMETER_LIST = "parameterList";
         Element parameterListEle = DocumentHelper.createElement(PARAMETER_LIST);
         subroutineEle.add(parameterListEle);
-        while (!getToken(nodeIndex).text.equals(")")) {
+        while (!getToken(nodeIndex).getText().equals(")")) {
             copyElement(parameterListEle, 1);
         }
     }
@@ -126,7 +129,7 @@ public class CompilationEngine {
         parentEle.add(doEle);
         do {
             copyElement(doEle);
-        } while (!getToken().getText().equals("("));
+        } while (!getToken(nodeIndex - 1).getText().equals("("));
         compileExpressionList(doEle);
         copyElement(doEle, 2);
     }
@@ -138,9 +141,16 @@ public class CompilationEngine {
         Element letEle = createKeywordElement(KeyWordEnum.LET);
         parentEle.add(letEle);
         do {
+            String text = getToken().getText();
             copyElement(letEle);
-        } while (!getToken(nodeIndex).getText().equals("="));
+            // 处理刑辱 let a[1]
+            if (text.equals("[")) {
+                compileExpression(letEle);
+            }
+        } while (!getToken(nodeIndex - 1).getText().equals("="));
         compileExpression(letEle);
+        // 处理；
+        copyElement(letEle);
     }
 
     /**
@@ -151,7 +161,7 @@ public class CompilationEngine {
         parentEle.add(varEle);
         do {
             copyElement(varEle);
-        } while (!getToken(nodeIndex).getText().equals(";"));
+        } while (!getToken(nodeIndex - 1).getText().equals(";"));
     }
 
     /**
@@ -198,10 +208,10 @@ public class CompilationEngine {
         //compile else
         if (KeyWordEnum.ELSE.getCode().equals(getToken().getText())) {
             // else {
-            copyElement(parentEle, 2);
-            compileStatementList(parentEle);
+            copyElement(ifEle, 2);
+            compileStatementList(ifEle);
             // }
-            copyElement(parentEle);
+            copyElement(ifEle);
         }
     }
 
@@ -233,14 +243,20 @@ public class CompilationEngine {
                     System.out.println("遇到无法识别的关键字");
                     break;
                 }
+            } else if ("}".equals(token.getText())) {
+                System.out.println("statement parse end");
+                break;
+            } else {
+                FileUtils.writeIntoXml("Main.xml", targetDocument);
+                throw new RuntimeException("遇到不为keyword的节点" + nodeIndex + getToken().getText() + getToken().getName());
             }
         }
     }
 
     private void compileExpressionList(Element parentEle) {
         Element expListEle = DocumentHelper.createElement("expressionList");
+        parentEle.add(expListEle);
         while (!")".equals(getToken().getText())) {
-            parentEle.add(expListEle);
             compileExpression(expListEle);
             copyElement(expListEle);
         }
@@ -252,11 +268,10 @@ public class CompilationEngine {
     private void compileExpression(Element parentEle) {
         Element expressionEle = DocumentHelper.createElement("expression");
         parentEle.add(expressionEle);
-        String tokenName = getToken(nodeIndex).getName();
-        if (tokenName.equals(TokenTypeEnum.IDENTIFIER.getCode()) ||
-                tokenName.equals(TokenTypeEnum.INT_CONST.getCode()) ||
-                tokenName.equals(TokenTypeEnum.STRING_CONST.getCode())
-        ) {
+        compileTerm(expressionEle);
+        while (Constants.MATH_PATTERN.contains(getToken().getText())) {
+            System.out.println(getToken().getText());
+            copyElement(expressionEle);
             compileTerm(expressionEle);
         }
     }
@@ -269,6 +284,7 @@ public class CompilationEngine {
      */
     private void compileTerm(Element parentEle) {
         Element termEle = DocumentHelper.createElement("term");
+        parentEle.add(termEle);
         // 根据这个token来判断下来做的事情
         Token curToken = getToken();
         copyElement(termEle);
@@ -276,45 +292,50 @@ public class CompilationEngine {
         String type = curToken.getName();
         if (type.equals(TokenTypeEnum.IDENTIFIER.getCode())) {
             // 如  a() a.b() a[i]
-            copyElement(termEle);
             Token nextToken = getToken();
             if ("(".equals(nextToken.getText()) || ".".equals(nextToken.getText())) {
                 this.compilePartCall(termEle);
+//                copyElement(termEle);
             } else if ("[".equals(nextToken.getText())) {
+                // 复制 [
+                copyElement(termEle);
                 compileExpression(termEle);
                 if ("]".equals(getToken().getText())) {
                     copyElement(termEle);
                 } else {
                     System.out.println("遇到了非法的字符");
                 }
+//                copyElement(termEle);
             } else {
-                nodeIndex--;
+//                copyElement(termEle);
+                //                nodeIndex--;
+
             }
         } else if (type.equals(TokenTypeEnum.STRING_CONST.getCode()) ||
                 type.equals(TokenTypeEnum.INT_CONST.getCode())) {
-            copyElement(termEle);
+//            copyElement(termEle);
         } else {
             if ("-".equals(text) || "~".equals(text)) {
-                copyElement(termEle);
                 compileTerm(termEle);
             } else if ("null".equals(text)
                     || "false".equals(text)
                     || "true".equals(text)
                     || "this".equals(text)
             ) {
-                copyElement(termEle);
+                //TODO 这里
+                //刚才已经copy过了
+//                copyElement(termEle);
             } else if ("(".equals(text)) {
-                copyElement(termEle);
-                compileExpressionList(termEle);
-                if (!")".equals(getToken().getText())) {
+                compileExpression(termEle);
+                if (")".equals(getToken().getText())) {
+                    copyElement(termEle);
+                } else {
                     System.out.println("can not get )");
                 }
             } else {
                 System.out.println("term get unExpect symbol");
             }
         }
-
-
     }
 
     private void compilePartCall(Element parentEle) {
@@ -339,9 +360,10 @@ public class CompilationEngine {
             }
             copyElement(parentEle);
             compileExpressionList(parentEle);
-            if (!")".equals(getToken().getText())) {
+            if (!")".equals(getToken(nodeIndex).getText())) {
                 System.out.println("error is compilePartCall not has )");
             }
+            copyElement(parentEle);
         }
     }
 
@@ -385,6 +407,10 @@ public class CompilationEngine {
     }
 
     private Element getElementByIndex(int index) {
+        if (index == nodeList.size() - 1) {
+            FileUtils.writeIntoXml(targetName, targetDocument);
+            return null;
+        }
         Element ele = nodeList.get(index);
         Element newEle = DocumentHelper.createElement(ele.getName());
         newEle.setText(ele.getText());
@@ -397,5 +423,9 @@ public class CompilationEngine {
         private String name;
 
         private String text;
+
+        public String getText() {
+            return text.trim();
+        }
     }
 }

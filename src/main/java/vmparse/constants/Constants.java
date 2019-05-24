@@ -39,5 +39,9 @@ public interface Constants {
      * blank
      */
     String BLANK_PATTERN = "\\t+|\\r+|\\n+";
+    /**
+     * 数学运算符
+     */
+    String MATH_PATTERN = "+-*/&|><";
 
 }

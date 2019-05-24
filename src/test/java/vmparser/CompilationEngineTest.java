@@ -10,7 +10,7 @@ import vmparse.CompilationEngine;
 public class CompilationEngineTest {
     @Test
     public void compileClassTest(){
-        CompilationEngine engine = new CompilationEngine("rss.xml");
-        engine.startParse("rs.xml");
+        CompilationEngine engine = new CompilationEngine("SquareGameT.xml");
+        engine.startParse("SquareGame.xml");
     }
 }

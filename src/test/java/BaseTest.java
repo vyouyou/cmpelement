@@ -17,5 +17,11 @@ public class BaseTest {
         if (matcher.find()) {
             System.out.println("s is ");
         }
+
+    }
+
+    @Test
+    public void testFind() {
+        System.out.println("+-*/&|><".contains(">"));
     }
 }
