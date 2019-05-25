@@ -42,6 +42,6 @@ public interface Constants {
     /**
      * 数学运算符
      */
-    String MATH_PATTERN = "+-*/&|><";
+    String MATH_PATTERN = "+-*/&|><=";
 
 }

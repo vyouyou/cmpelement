@@ -2,7 +2,6 @@ package vmparse;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
@@ -62,7 +61,7 @@ public class CompilationEngine {
                 compileSubroutine(classEle);
             }
         }
-        copyElement(classEle, 1);
+        copyElement(classEle);
     }
 
     /**
@@ -169,12 +168,15 @@ public class CompilationEngine {
      */
     private void compileWhile(Element parentEle) {
         Element whileEle = createKeywordElement(KeyWordEnum.WHILE);
+        parentEle.add(whileEle);
         // while (
         copyElement(whileEle, 2);
         compileExpression(whileEle);
         // )  }
         copyElement(whileEle, 2);
         compileStatementList(whileEle);
+        // }
+        copyElement(whileEle);
     }
 
     /**
@@ -184,7 +186,7 @@ public class CompilationEngine {
         Element returnEle = createKeywordElement(KeyWordEnum.RETURN);
         parentEle.add(returnEle);
         copyElement(returnEle);
-        if (":".equals(getToken().getText())) {
+        if (!";".equals(getToken().getText())) {
             compileExpression(returnEle);
         }
         // copy ;
@@ -258,6 +260,9 @@ public class CompilationEngine {
         parentEle.add(expListEle);
         while (!")".equals(getToken().getText())) {
             compileExpression(expListEle);
+            if (")".equals(getToken().getText())) {
+                break;
+            }
             copyElement(expListEle);
         }
     }
@@ -407,7 +412,7 @@ public class CompilationEngine {
     }
 
     private Element getElementByIndex(int index) {
-        if (index == nodeList.size() - 1) {
+        if (index == nodeList.size()) {
             FileUtils.writeIntoXml(targetName, targetDocument);
             return null;
         }

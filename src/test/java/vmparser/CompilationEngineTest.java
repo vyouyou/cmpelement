@@ -13,4 +13,10 @@ public class CompilationEngineTest {
         CompilationEngine engine = new CompilationEngine("SquareGameT.xml");
         engine.startParse("SquareGame.xml");
     }
+
+    @Test
+    public void compileSquareClassTest(){
+        CompilationEngine engine = new CompilationEngine("SquareT.xml");
+        engine.startParse("Square.xml");
+    }
 }
