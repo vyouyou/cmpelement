@@ -1,17 +1,35 @@
 package vmfinal;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
 /**
  * @Author qishiyu
  * @create 2019/5/27 21:08
  */
 public class VMWriter {
-    public VMWriter() {
+
+    BufferedWriter writer;
+
+    public VMWriter(String fileName) {
+        File targetFile = new File(fileName);
+        try {
+            targetFile.createNewFile();
+            writer = new BufferedWriter(new FileWriter(targetFile));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
-    private void writePush(Constants.MemoryKindEnum memoryKind, int index) {
+    public void writePush(Constants.MemoryKindEnum memoryKind, int index) {
+        writeToFile("push " + memoryKind.getCode() + " " + index);
     }
 
-    private void writePop(Constants.MemoryKindEnum memoryKind, int index) {
+    public void writePop(Constants.MemoryKindEnum memoryKind, int index) {
+        writeToFile("pop " + memoryKind.getCode() + " " + index);
     }
 
     /**
@@ -19,27 +37,48 @@ public class VMWriter {
      *
      * @param arithmetic
      */
-    private void writeArithmetic(Constants.Arithmetic arithmetic) {
+    public void writeArithmetic(Constants.Arithmetic arithmetic) {
+        writeToFile(arithmetic.getCode());
     }
 
-    private void writeLabel(String label) {
+    public void writeLabel(String label) {
+        writeToFile(label);
     }
 
-    private void writeGoto(String label) {
+    public void writeGoto(String label) {
+        writeToFile("goto " + label);
     }
 
-    private void writeIf(String label) {
+    public void writeIf(String label) {
+        writeToFile("if-goto " + label);
     }
 
-    private void writeCall(String name, int nArgs) {
+    public void writeCall(String name, int nArgs) {
+        writeToFile("call " + name + " " + nArgs);
     }
 
-    private void writeFunction(String name, int nArgs) {
+    public void writeFunction(String name, int nArgs) {
+        writeToFile("function " + name + " " + nArgs);
     }
 
-    private void writeReturn() {
+    public void writeReturn() {
+        writeToFile("return");
     }
 
-    private void close() {
+    public void close() {
+        try {
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void writeToFile(String code) {
+        try {
+            writer.write(code + "\r\n");
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

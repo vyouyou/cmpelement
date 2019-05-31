@@ -1,5 +1,7 @@
 package vmfinal;
 
+import lombok.Getter;
+
 /**
  * @Author qishiyu
  * @create 2019/5/27 21:11
@@ -11,6 +13,7 @@ public class Constants {
         ARG("arg"),
         VAR("var");
 
+        @Getter
         String code;
 
         SymbolKindEnum(String code) {
@@ -28,6 +31,7 @@ public class Constants {
         POINTER("pointer"),
         TEMP("temp");
 
+        @Getter
         String code;
 
         MemoryKindEnum(String code) {
@@ -36,16 +40,21 @@ public class Constants {
     }
 
     public enum Arithmetic {
+        /**
+         * gt  >
+         * lt <
+         */
         ADD("add"),
         SUB("sub"),
         NEG("neg"),
         EQ("eq"),
-        GT("add"),
+        GT("gt"),
         LT("add"),
-        AND("add"),
-        OR("add"),
-        NOT("add");
+        AND("and"),
+        OR("or"),
+        NOT("not");
 
+        @Getter
         String code;
 
         Arithmetic(String code) {
