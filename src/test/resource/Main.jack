@@ -1,7 +1,23 @@
+/**
+ * Unpacks a 16-bit number into its binary representation:
+ * Takes the 16-bit number stored in RAM[8000] and stores its individual
+ * bits in RAM[8001..8016] (each location will contain 0 or 1).
+ * Before the conversion, RAM[8001]..RAM[8016] are initialized to -1.
+ *
+ * The program should be tested as follows:
+ * 1) Load the program into the supplied VM emulator
+ * 2) Put some value in RAM[8000]
+ * 3) Switch to "no animation"
+ * 4) Run the program (give it enough time to run)
+ * 5) Stop the program
+ * 6) Check that RAM[8001]..RAM[8016] contains the correct binary result, and
+ *    that none of these memory locations contains -1.
+ */
+ //aaaa
 class Main {
     static boolean test;
     function void main() {
-      var SquareGame game;
+      var SquareGame game;   //aaaa
       let game = SquareGame.new();
       do game.run();
       do game.dispose();

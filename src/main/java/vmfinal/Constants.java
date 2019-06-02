@@ -19,6 +19,10 @@ public class Constants {
         SymbolKindEnum(String code) {
             this.code = code;
         }
+
+        public static SymbolKindEnum getByCode(String code) {
+            return SymbolKindEnum.valueOf(code);
+        }
     }
 
     public enum MemoryKindEnum {
