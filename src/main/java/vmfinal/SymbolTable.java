@@ -13,12 +13,12 @@ import java.util.Map;
  */
 public class SymbolTable {
 
-    Map<String, SymbolTypeKind> symbolMap;
+    private Map<String, SymbolTypeKind> symbolMap;
 
-    Integer varIndex = 0;
-    Integer argIndex = 0;
-    Integer staticIndex = 0;
-    Integer fieldIndex = 0;
+    private Integer varIndex = 0;
+    private Integer argIndex = 0;
+    private Integer staticIndex = 0;
+    private Integer fieldIndex = 0;
 
     public SymbolTable() {
         symbolMap = Maps.newHashMap();

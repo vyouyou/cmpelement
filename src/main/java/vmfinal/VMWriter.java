@@ -1,5 +1,7 @@
 package vmfinal;
 
+import lombok.Setter;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -13,8 +15,12 @@ public class VMWriter {
 
     BufferedWriter writer;
 
+    @Setter
+    private String className;
+
     public VMWriter(String fileName) {
         File targetFile = new File(fileName);
+        this.className = className;
         try {
             targetFile.createNewFile();
             writer = new BufferedWriter(new FileWriter(targetFile));
@@ -58,7 +64,7 @@ public class VMWriter {
     }
 
     public void writeFunction(String name, int nArgs) {
-        writeToFile("function " + name + " " + nArgs);
+        writeToFile("function " + className + "." + name + " " + nArgs);
     }
 
     public void writeReturn() {
