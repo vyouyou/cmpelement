@@ -122,7 +122,10 @@ public class CompilationEngine {
      * 编译参数列表
      */
     private void compileParameterList() {
-
+//        tokenIndex++;
+//        if (TokenTypeEnum.SYMBOL.getCode().equals(getTokenType()) || TokenTypeEnum.INT_CONST.getCode().equals(getTokenType())){
+//
+//        }
     }
 
     /**
@@ -274,7 +277,7 @@ public class CompilationEngine {
 //        }
     }
 
-    private void compileExpressionList(Element parentEle) {
+    private void compileExpressionList() {
 //        Element expListEle = DocumentHelper.createElement("expressionList");
 //        parentEle.add(expListEle);
 //        while (!")".equals(getToken().getText())) {
