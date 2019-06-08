@@ -21,6 +21,13 @@ public class JackTokenizerTest {
     public void sevenTest() {
         JackTokenizer jackTokenizer = new JackTokenizer("E:\\javaprj\\cmpelement\\src\\test\\resource\\Seven\\Main.jack");
         List<TokenWithLineNumber> tokens = jackTokenizer.getTokenWithLineNumberList();
-        new CompilationEngine(tokens).startParse();
+        new CompilationEngine(tokens, "Seven.vm").startParse();
+    }
+
+    @Test
+    public void convertToBinTest() {
+        JackTokenizer jackTokenizer = new JackTokenizer("E:\\javaprj\\cmpelement\\src\\test\\resource\\ConvertToBin\\Main.jack");
+        List<TokenWithLineNumber> tokens = jackTokenizer.getTokenWithLineNumberList();
+        new CompilationEngine(tokens, "ConvertToBin.vm").startParse();
     }
 }

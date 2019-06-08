@@ -33,10 +33,10 @@ public class CompilationEngine {
      */
     private String className;
 
-    public CompilationEngine(List<TokenWithLineNumber> tokens) {
+    public CompilationEngine(List<TokenWithLineNumber> tokens, String target) {
         symbolTableStack = new Stack<>();
         this.tokens = tokens;
-        this.vmWriter = new VMWriter("Main.vm");
+        this.vmWriter = new VMWriter(target);
     }
 
     public void startParse() {
@@ -64,21 +64,6 @@ public class CompilationEngine {
         } else {
             throw new CompileException("没有class关键字");
         }
-//        Element classEle = createKeywordElement(KeyWordEnum.CLASS);
-//        targetDocument.setRootElement(classEle);
-//        copyElement(classEle, 3);
-//        while (!"}".equals(getToken().getText())) {
-//            String text = getToken().getText();
-//            if (text.equals(KeyWordEnum.STATIC.getCode()) ||
-//                    text.equals(KeyWordEnum.FIELD.getCode())) {
-//                compileClassVarDec(classEle);
-//            } else if (text.equals(KeyWordEnum.METHOD.getCode()) ||
-//                    text.equals(KeyWordEnum.FUNCTION.getCode()) ||
-//                    text.equals(KeyWordEnum.CONSTRUCTOR.getCode())) {
-//                compileSubroutine(classEle);
-//            }
-//        }
-//        copyElement(classEle);
     }
 
     /**
@@ -177,7 +162,7 @@ public class CompilationEngine {
     /**
      * let
      */
-    private void compileLet(Element parentEle) {
+    private void compileLet() {
 //        Element letEle = createKeywordElement(KeyWordEnum.LET);
 //        parentEle.add(letEle);
 //        do {
@@ -220,17 +205,12 @@ public class CompilationEngine {
     /**
      * while
      */
-    private void compileWhile(Element parentEle) {
-        Element whileEle = createKeywordElement(KeyWordEnum.WHILE);
-        parentEle.add(whileEle);
+    private void compileWhile() {
         // while (
-        copyElement(whileEle, 2);
         compileExpression();
         // )  }
-        copyElement(whileEle, 2);
         compileStatementList();
         // }
-        copyElement(whileEle);
     }
 
     /**
@@ -247,17 +227,10 @@ public class CompilationEngine {
     /**
      * if
      */
-    private void compileIf(Element parentEle) {
-        Element ifEle = createKeywordElement(KeyWordEnum.IF);
-        parentEle.add(ifEle);
+    private void compileIf() {
         // if  (
-        copyElement(ifEle, 2);
-        compileExpression();
         // )  {
-        copyElement(ifEle, 2);
-        compileStatementList();
         // }
-        copyElement(ifEle);
         //compile else
 //        if (KeyWordEnum.ELSE.getCode().equals(getToken().getText())) {
 //            // else {
@@ -277,6 +250,12 @@ public class CompilationEngine {
             String tokenText = getTokenText();
             if (KeyWordEnum.DO.getCode().equals(tokenText)) {
                 compileDo();
+            } else if (KeyWordEnum.LET.getCode().equals(tokenText)) {
+                compileLet();
+            } else if (KeyWordEnum.IF.getCode().equals(tokenText)) {
+                compileIf();
+            } else if (KeyWordEnum.WHILE.getCode().equals(tokenText)) {
+                compileWhile();
             } else if (KeyWordEnum.RETURN.getCode().equals(tokenText)) {
                 compileReturn();
             } else {
