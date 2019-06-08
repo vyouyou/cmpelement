@@ -8,7 +8,6 @@ import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import utils.FileUtils;
-import vmparse.constants.Constants;
 import vmparse.constants.KeyWordEnum;
 import vmparse.constants.TokenTypeEnum;
 
@@ -40,15 +39,18 @@ public class CompilationEngine {
         this.vmWriter = new VMWriter("Main.vm");
     }
 
-    public void startParse(String targetName) {
+    public void startParse() {
         compileClass();
         compileClassVarDec();
-        while (KeyWordEnum.CONSTRUCTOR.getCode().equals(getTokenText()) ||
-                KeyWordEnum.FUNCTION.getCode().equals(getTokenText()) ||
-                KeyWordEnum.METHOD.getCode().equals(getTokenText())
+        String nextTokenText = getNextTokenText();
+        while (KeyWordEnum.CONSTRUCTOR.getCode().equals(nextTokenText) ||
+                KeyWordEnum.FUNCTION.getCode().equals(nextTokenText) ||
+                KeyWordEnum.METHOD.getCode().equals(nextTokenText)
         ) {
             compileSubroutine();
+            nextTokenText = getNextTokenText();
         }
+        vmWriter.close();
     }
 
     /**
@@ -56,8 +58,7 @@ public class CompilationEngine {
      */
     private void compileClass() {
         if ("class".equals(getTokenText())) {
-            tokenIndex++;
-            className = getTokenText();
+            className = getNextTokenText();
             vmWriter.setClassName(className);
             tokenIndex++;
         } else {
@@ -88,8 +89,7 @@ public class CompilationEngine {
         while (KeyWordEnum.STATIC.getCode().equals(getTokenText())
                 || KeyWordEnum.FIELD.getCode().equals(getTokenText())) {
             String keyword = getTokenText();
-            tokenIndex++;
-            String type = getTokenText();
+            String type = getNextTokenText();
             tokenIndex++;
             while (true) {
                 String identify = getTokenText();
@@ -107,36 +107,71 @@ public class CompilationEngine {
      * 编译方法
      */
     private void compileSubroutine() {
+        tokenIndex += 2;
+        String methodName = getTokenText();
+        addArgs();
+        // 处理  {
         tokenIndex++;
-        String name = getTokenText();
-        while (!"{".equals(getTokenText())) {
+        int argsNum = compileVar();
+        vmWriter.writeFunction(methodName, argsNum);
+        compileStatementList();
+    }
+
+    private void addArgs() {
+        SymbolTable tempTable = new SymbolTable();
+        symbolTableStack.push(tempTable);
+        tokenIndex++;
+        // (
+        while (true) {
+            if (")".equals(getNextTokenText())) {
+                break;
+            }
+            if (",".equals(getTokenText())) {
+                tokenIndex++;
+            }
+            String type = getTokenText();
+            String name = getNextTokenText();
+            tempTable.define(name, type, Constants.SymbolKindEnum.ARG);
             tokenIndex++;
         }
-        int argsNum = compileVar();
-        vmWriter.writeFunction(getTokenText(), argsNum);
-        compileStatementList();
+        //)
+        tokenIndex++;
     }
 
 
     /**
-     * 编译参数列表
+     * 编译参数列表 声明方法后面的一系列参数
      */
-    private void compileParameterList() {
-//        tokenIndex++;
-//        if (TokenTypeEnum.SYMBOL.getCode().equals(getTokenType()) || TokenTypeEnum.INT_CONST.getCode().equals(getTokenType())){
-//
-//        }
+    private int compileParameterList() {
+        tokenIndex++;
+        int number = 0;
+        while (true) {
+            String text = getNextTokenText();
+            if (text.equals(")")) {
+                break;
+            } else if (text.equals(",")) {
+                tokenIndex++;
+            }
+            number++;
+            compileTerm();
+        }
+        return number;
     }
+
 
     /**
      * do
      * do aaa(exp1,exp2)
      */
     private void compileDo() {
-        tokenIndex += 2;
         // 先获取方法名称
-        String funcName = getTokenText();
-        compileParameterList();
+        String funcName = getNextTokenText();
+        compilePartCall(funcName);
+        // 处理  ;
+        tokenIndex++;
+        // 对于 do  要将结果弹出
+        vmWriter.writePop(Constants.MemoryKindEnum.TEMP, 0
+        );
     }
 
     /**
@@ -190,7 +225,7 @@ public class CompilationEngine {
         parentEle.add(whileEle);
         // while (
         copyElement(whileEle, 2);
-        compileExpression(whileEle);
+        compileExpression();
         // )  }
         copyElement(whileEle, 2);
         compileStatementList();
@@ -201,15 +236,12 @@ public class CompilationEngine {
     /**
      * return
      */
-    private void compileReturn(Element parentEle) {
-//        Element returnEle = createKeywordElement(KeyWordEnum.RETURN);
-//        parentEle.add(returnEle);
-//        copyElement(returnEle);
-//        if (!";".equals(getToken().getText())) {
-//            compileExpression(returnEle);
-//        }
-//        // copy ;
-//        copyElement(returnEle);
+    private void compileReturn() {
+        if (";".equals(getNextTokenText())) {
+            vmWriter.writePush(Constants.MemoryKindEnum.CONST, 0);
+            tokenIndex++;
+        }
+        vmWriter.writeReturn();
     }
 
     /**
@@ -220,7 +252,7 @@ public class CompilationEngine {
         parentEle.add(ifEle);
         // if  (
         copyElement(ifEle, 2);
-        compileExpression(ifEle);
+        compileExpression();
         // )  {
         copyElement(ifEle, 2);
         compileStatementList();
@@ -241,10 +273,14 @@ public class CompilationEngine {
      * 表达式列表 ，用于方法调用中 fun(a,b)
      */
     private void compileStatementList() {
-        // 当前节点
         while (true) {
-            if (KeyWordEnum.DO.getCode().equals(getTokenText())) {
+            String tokenText = getTokenText();
+            if (KeyWordEnum.DO.getCode().equals(tokenText)) {
                 compileDo();
+            } else if (KeyWordEnum.RETURN.getCode().equals(tokenText)) {
+                compileReturn();
+            } else {
+                break;
             }
         }
 //        for (; ; ) {
@@ -277,30 +313,31 @@ public class CompilationEngine {
 //        }
     }
 
-    private void compileExpressionList() {
-//        Element expListEle = DocumentHelper.createElement("expressionList");
-//        parentEle.add(expListEle);
-//        while (!")".equals(getToken().getText())) {
-//            compileExpression(expListEle);
-//            if (")".equals(getToken().getText())) {
-//                break;
-//            }
-//            copyElement(expListEle);
-//        }
+    private int compileExpressionList() {
+        int expressSize = 0;
+        while (!")".equals(getNextTokenText())) {
+            tokenIndex++;
+            compileExpression();
+            expressSize++;
+        }
+        return expressSize;
     }
 
     /**
      * 表达式 let i = (1 + 2 ) 后面为 expression
      */
-    private void compileExpression(Element parentEle) {
-//        Element expressionEle = DocumentHelper.createElement("expression");
-//        parentEle.add(expressionEle);
-//        compileTerm(expressionEle);
-//        while (Constants.MATH_PATTERN.contains(getToken().getText())) {
-//            System.out.println(getToken().getText());
-//            copyElement(expressionEle);
-//            compileTerm(expressionEle);
-//        }
+    private void compileExpression() {
+        compileTerm();
+        while (true) {
+            String mathSymbol = getNextTokenText();
+            if (!Constants.MATH_PATTERN.contains(mathSymbol)) {
+                tokenIndex--;
+                break;
+            }
+            tokenIndex++;
+            compileTerm();
+            vmWriter.writeArithmetic(mathSymbol);
+        }
     }
 
     /**
@@ -309,89 +346,51 @@ public class CompilationEngine {
      * [ <term>i</term> ]
      * <term>a.b(c)</term>
      */
-    private void compileTerm(Element parentEle) {
-//        Element termEle = DocumentHelper.createElement("term");
-//        parentEle.add(termEle);
-//        // 根据这个token来判断下来做的事情
-//        vmparse.CompilationEngine.Token curToken = getToken();
-//        copyElement(termEle);
-//        String text = curToken.getText();
-//        String type = curToken.getName();
-//        if (type.equals(TokenTypeEnum.IDENTIFIER.getCode())) {
-//            // 如  a() a.b() a[i]
-//            vmparse.CompilationEngine.Token nextToken = getToken();
-//            if ("(".equals(nextToken.getText()) || ".".equals(nextToken.getText())) {
-//                this.compilePartCall(termEle);
-////                copyElement(termEle);
-//            } else if ("[".equals(nextToken.getText())) {
-//                // 复制 [
+    private void compileTerm() {
+        String text = getTokenText();
+        TokenTypeEnum type = getTokenType();
+        if (type.equals(TokenTypeEnum.IDENTIFIER)) {
+            // 如  a() a.b() a[i]
+            String nextText = getNextTokenText();
+            if ("(".equals(nextText) || ".".equals(nextText)) {
+                this.compilePartCall(text);
 //                copyElement(termEle);
-//                compileExpression(termEle);
-//                if ("]".equals(getToken().getText())) {
-//                    copyElement(termEle);
-//                } else {
-//                    System.out.println("遇到了非法的字符");
-//                }
-////                copyElement(termEle);
-//            } else {
-////                copyElement(termEle);
-//                //                nodeIndex--;
-//
-//            }
-//        } else if (type.equals(TokenTypeEnum.STRING_CONST.getCode()) ||
-//                type.equals(TokenTypeEnum.INT_CONST.getCode())) {
-////            copyElement(termEle);
-//        } else {
-//            if ("-".equals(text) || "~".equals(text)) {
-//                compileTerm(termEle);
-//            } else if ("null".equals(text)
-//                    || "false".equals(text)
-//                    || "true".equals(text)
-//                    || "this".equals(text)
-//            ) {
-//                //TODO 这里
-//                //刚才已经copy过了
-////                copyElement(termEle);
-//            } else if ("(".equals(text)) {
-//                compileExpression(termEle);
-//                if (")".equals(getToken().getText())) {
-//                    copyElement(termEle);
-//                } else {
-//                    System.out.println("can not get )");
-//                }
-//            } else {
-//                System.out.println("term get unExpect symbol");
-//            }
-//        }
+            } else if ("[".equals(nextText)) {
+                compileExpression();
+                if ("]".equals(getNextTokenText())) {
+                } else {
+                }
+            }
+        } else if (type.equals(TokenTypeEnum.STRING_CONST) ||
+                type.equals(TokenTypeEnum.INT_CONST)) {
+            vmWriter.writePush(Constants.MemoryKindEnum.CONST, getTokenText());
+        } else if ("-".equals(text) || "~".equals(text)) {
+            compileTerm();
+        } else if ("(".equals(text)) {
+            tokenIndex++;
+            compileExpression();
+            if (")".equals(getNextTokenText())) {
+            } else {
+                System.out.println("can not get )");
+            }
+        } else {
+            System.out.println("term get unExpect symbol");
+        }
     }
 
-    private void compilePartCall(Element parentEle) {
-//        vmparse.CompilationEngine.Token token = getToken();
-//        String text = token.getText();
-//        if ("(".equals(text)) {
-//            copyElement(parentEle);
-//            compileExpressionList(parentEle);
-//            if (")".equals(getToken().getText())) {
-//                copyElement(parentEle);
-//            } else {
-//                System.out.println("error is compilePartCall miss )");
-//            }
-//        } else if (".".equals(text)) {
-//            copyElement(parentEle);
-//            if (!TokenTypeEnum.IDENTIFIER.getCode().equals(getToken().getName())) {
-//                System.out.println("error is compilePartCall not IDENTIFIER");
-//            }
-//            copyElement(parentEle);
-//            if (!"(".equals(getToken().getText())) {
-//                System.out.println("error is compilePartCall not has (");
-//            }
-//            copyElement(parentEle);
-//            compileExpressionList(parentEle);
-//            if (!")".equals(getToken(nodeIndex).getText())) {
-//                System.out.println("error is compilePartCall not has )");
-//            }
-//            copyElement(parentEle);
-//        }
+    private void compilePartCall(String funcName) {
+        String text = getNextTokenText();
+        int argsNum = 0;
+        if ("(".equals(text)) {
+            vmWriter.writePush(Constants.MemoryKindEnum.THIS, 2);
+            argsNum = compileExpressionList() + 1;
+        } else if (".".equals(text)) {
+            funcName = funcName + "." + getNextTokenText();
+            argsNum = compileExpressionList();
+        }
+        vmWriter.writeCall(funcName, argsNum);
+        // 处理后括号 )
+        tokenIndex++;
     }
 
 
@@ -422,6 +421,10 @@ public class CompilationEngine {
 
     private String getTokenText() {
         return tokens.get(tokenIndex).getText();
+    }
+
+    private String getNextTokenText() {
+        return tokens.get(++tokenIndex).getText();
     }
 
     private Integer getTokenLineNum() {

@@ -1,3 +1,4 @@
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import vmparse.constants.Constants;
 
@@ -23,5 +24,10 @@ public class BaseTest {
     @Test
     public void testFind() {
         System.out.println("+-*/&|><".contains(">"));
+    }
+
+    @Test
+    public void testIsEmpty() {
+        System.out.println(StringUtils.isNotEmpty(""));
     }
 }

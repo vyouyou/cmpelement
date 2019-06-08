@@ -65,4 +65,9 @@ public class Constants {
             this.code = code;
         }
     }
+
+    /**
+     * 数学运算符
+     */
+    public static final String MATH_PATTERN = "+-*/&|><=";
 }

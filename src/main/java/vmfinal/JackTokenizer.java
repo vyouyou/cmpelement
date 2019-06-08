@@ -1,6 +1,7 @@
 package vmfinal;
 
 import com.google.common.collect.Lists;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import utils.FileUtils;
 import vmparse.constants.Constants;
@@ -21,11 +22,14 @@ import static vmparse.constants.Constants.STR_P;
  */
 public class JackTokenizer {
 
+    @Getter
+    List<TokenWithLineNumber> tokenWithLineNumberList;
+
     public JackTokenizer(String path) {
         try {
             List<String> stringList = FileUtils.readFile(path);
             stringList = removeComment(stringList);
-            List<TokenWithLineNumber> tokenWithLineNumberList = genTokens(stringList);
+            tokenWithLineNumberList = genTokens(stringList);
             genType(tokenWithLineNumberList);
         } catch (IOException e) {
             e.printStackTrace();
@@ -42,7 +46,8 @@ public class JackTokenizer {
     private List<String> removeComment(List<String> stringList) {
         return stringList.stream().filter(item -> {
             if (item.trim().startsWith("//") || item.trim().startsWith("/*")
-                    || item.trim().startsWith("*") || item.trim().startsWith("*/")) {
+                    || item.trim().startsWith("*")
+                    || item.trim().startsWith("*/")) {
                 return false;
             }
             return true;
@@ -50,7 +55,8 @@ public class JackTokenizer {
             Pattern p = Pattern.compile("(\\/\\/).*");
             Matcher matcher = p.matcher(item);
             return matcher.replaceAll("");
-        }).collect(Collectors.toList());
+        }).filter((item) -> StringUtils.isNotEmpty(item)
+        ).collect(Collectors.toList());
     }
 
     private List<TokenWithLineNumber> genTokens(List<String> stringList) {
@@ -65,11 +71,12 @@ public class JackTokenizer {
                     tokens.add(s);
                 } else {
                     int finalI = i;
-                    tokens.addAll(Lists.newArrayList(s.split(" ")).stream().filter((str) -> {
+                    Lists.newArrayList(s.split(" ")).stream().forEach((str) -> {
                         str = str.trim();
-                        lineNumberTokenList.add(new TokenWithLineNumber(str, finalI));
-                        return StringUtils.isNotEmpty(str);
-                    }).collect(Collectors.toList()));
+                        if (StringUtils.isNotEmpty(str)) {
+                            lineNumberTokenList.add(new TokenWithLineNumber(str, finalI));
+                        }
+                    });
                 }
             }
         }

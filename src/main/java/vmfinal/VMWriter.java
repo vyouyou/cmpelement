@@ -30,21 +30,46 @@ public class VMWriter {
 
     }
 
-    public void writePush(Constants.MemoryKindEnum memoryKind, int index) {
+    public void writePop(Constants.MemoryKindEnum memoryKind, int index) {
+        writeToFile("pop " + memoryKind.getCode() + " " + index);
+    }
+
+    public void writePop(Constants.MemoryKindEnum memoryKind, String index) {
+        writeToFile("pop " + memoryKind.getCode() + " " + index);
+    }
+
+    public void writePush(Constants.MemoryKindEnum memoryKind, String index) {
         writeToFile("push " + memoryKind.getCode() + " " + index);
     }
 
-    public void writePop(Constants.MemoryKindEnum memoryKind, int index) {
-        writeToFile("pop " + memoryKind.getCode() + " " + index);
+    public void writePush(Constants.MemoryKindEnum memoryKind, int index) {
+        writeToFile("push " + memoryKind.getCode() + " " + index);
     }
 
     /**
      * 算数运算符
      *
-     * @param arithmetic
+     * @param code
      */
-    public void writeArithmetic(Constants.Arithmetic arithmetic) {
-        writeToFile(arithmetic.getCode());
+    public void writeArithmetic(String code) {
+        String symbolText = "";
+        switch (code) {
+            case "+":
+                symbolText = "add";
+                break;
+            case "-":
+                symbolText = "sub";
+                break;
+            case "*":
+                symbolText = "call Math.multiply 2";
+                break;
+            case "/":
+                symbolText = "call Math.divide 2";
+                break;
+            default:
+                symbolText = "";
+        }
+        writeToFile(symbolText);
     }
 
     public void writeLabel(String label) {
@@ -81,7 +106,7 @@ public class VMWriter {
 
     private void writeToFile(String code) {
         try {
-            writer.write(code + "\r\n");
+            writer.append(code + "\r\n");
             writer.flush();
         } catch (IOException e) {
             e.printStackTrace();
