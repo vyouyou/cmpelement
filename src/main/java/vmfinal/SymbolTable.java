@@ -59,12 +59,16 @@ public class SymbolTable {
         return typeKind.getKind();
     }
 
-    private String typeOf(String name) {
+    public String typeOf(String name) {
         SymbolTypeKind typeKind = symbolMap.get(name);
         if (null == typeKind) {
             throw new CompileException("不存在该name");
         }
         return typeKind.getType();
+    }
+
+    public SymbolTypeKind getByName(String name) {
+        return symbolMap.get(name);
     }
 
     /**
@@ -94,6 +98,7 @@ public class SymbolTable {
             throw new CompileException("获取到错误的kind");
         }
     }
+
 
     @Data
     @AllArgsConstructor
