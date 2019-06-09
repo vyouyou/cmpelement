@@ -80,10 +80,10 @@ public class VMWriter {
     public void writeNumberDecorater(String label) {
         switch (label) {
             case "-":
-                writeToFile("neg");
+                writeToFile("not");
                 break;
             case "~":
-                writeToFile("not");
+                writeToFile("neg");
                 break;
         }
     }

@@ -172,7 +172,8 @@ public class CompilationEngine {
         if ("[".equals(getNextTokenText())) {
             compileExpression();
         }
-        compilePartCall(getNextTokenText());
+        getNextTokenText();
+        compileExpression();
         pop2Var(argName);
         tokenIndex++;
 //        do {
@@ -342,6 +343,7 @@ public class CompilationEngine {
             // 如  a() a.b() a[i]
             String nextText = getNextTokenText();
             if ("(".equals(nextText) || ".".equals(nextText)) {
+                tokenIndex--;
                 this.compilePartCall(text);
 //                copyElement(termEle);
             } else if ("[".equals(nextText)) {
@@ -446,6 +448,10 @@ public class CompilationEngine {
 
     private TokenTypeEnum getTokenType() {
         return tokens.get(tokenIndex).getType();
+    }
+
+    private String getTokenText(int offset) {
+        return tokens.get(tokenIndex + offset).getText();
     }
 
     private String getTokenText() {

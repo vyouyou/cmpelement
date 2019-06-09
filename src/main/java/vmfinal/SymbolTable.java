@@ -44,7 +44,8 @@ public class SymbolTable {
      */
     public void define(String name, String type, Constants.SymbolKindEnum kind) {
         Integer index = switchIndexByKind(kind);
-        symbolMap.put(name, new SymbolTypeKind(type, kind, index++));
+        index += 1;
+        symbolMap.put(name, new SymbolTypeKind(type, kind, index));
     }
 
     private int varCount(Constants.SymbolKindEnum kind) {
