@@ -1,17 +1,10 @@
 package vmfinal;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import org.dom4j.Document;
-import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
-import org.dom4j.io.SAXReader;
-import utils.FileUtils;
 import vmparse.constants.KeyWordEnum;
 import vmparse.constants.TokenTypeEnum;
 
-import java.io.File;
 import java.util.List;
 import java.util.Stack;
 
@@ -32,6 +25,22 @@ public class CompilationEngine {
      * 类名
      */
     private String className;
+    /**
+     * while label 第几个
+     */
+    private int whileLabelIndex = 0;
+
+    private final static String WHILE_LABEL = "WHILE_LABEL_";
+
+    private final static String WHILE_LABEL_END = "WHILE_LABEL_END_";
+    /**
+     * if label 第几个
+     */
+    private int ifLabelIndex = 0;
+
+    private final static String IF_LABEL = "IF_LABEL_";
+
+    private final static String IF_LABEL_END = "IF_LABEL_END_";
 
     public CompilationEngine(List<TokenWithLineNumber> tokens, String target) {
         symbolTableStack = new Stack<>();
@@ -160,8 +169,8 @@ public class CompilationEngine {
         // 处理  ;
         tokenIndex++;
         // 对于 do  要将结果弹出
-        vmWriter.writePop(Constants.MemoryKindEnum.TEMP, 0
-        );
+        vmWriter.writePop(Constants.MemoryKindEnum.TEMP, 0);
+
     }
 
     /**
@@ -175,18 +184,10 @@ public class CompilationEngine {
         getNextTokenText();
         compileExpression();
         pop2Var(argName);
-        tokenIndex++;
-//        do {
-//            String text = getToken().getText();
-//            copyElement(letEle);
-//            // 处理刑辱 let a[1]
-//            if (text.equals("[")) {
-//                compileExpression(letEle);
-//            }
-//        } while (!getToken(nodeIndex - 1).getText().equals("="));
-//        compileExpression(letEle);
-//        // 处理；
-//        copyElement(letEle);
+        // TODO 这里是一个bug 因为最后可能 当为 n+1这种，最后读不到；
+        if (getNextTokenText().equals(";")) {
+            tokenIndex++;
+        }
     }
 
     /**
@@ -217,11 +218,18 @@ public class CompilationEngine {
      * while
      */
     private void compileWhile() {
-        // while (
+        String startLabel = WHILE_LABEL + whileLabelIndex;
+        String endLabel = WHILE_LABEL_END + whileLabelIndex;
+        vmWriter.writeLabel(startLabel);
+        tokenIndex += 2;
         compileExpression();
-        // )  }
+        vmWriter.writeNumberDecorater("~");
+        vmWriter.writeIf(endLabel);
+        tokenIndex += 3;
         compileStatementList();
-        // }
+        vmWriter.writeGoto(startLabel);
+        vmWriter.writeLabel(endLabel);
+        whileLabelIndex++;
     }
 
     /**
@@ -233,6 +241,7 @@ public class CompilationEngine {
             tokenIndex++;
         }
         vmWriter.writeReturn();
+        tokenIndex++;
     }
 
     /**
@@ -270,6 +279,7 @@ public class CompilationEngine {
             } else if (KeyWordEnum.RETURN.getCode().equals(tokenText)) {
                 compileReturn();
             } else {
+                tokenIndex--;
                 break;
             }
         }
@@ -367,6 +377,7 @@ public class CompilationEngine {
                 vmWriter.writePush(Constants.MemoryKindEnum.CONST, 1);
                 vmWriter.writeNumberDecorater("-");
             }
+            tokenIndex++;
         } else if (type.equals(TokenTypeEnum.STRING_CONST) ||
                 type.equals(TokenTypeEnum.INT_CONST)) {
             vmWriter.writePush(Constants.MemoryKindEnum.CONST, getTokenText());

@@ -43,9 +43,21 @@ public class SymbolTable {
      * @param kind
      */
     public void define(String name, String type, Constants.SymbolKindEnum kind) {
-        Integer index = switchIndexByKind(kind);
-        index += 1;
-        symbolMap.put(name, new SymbolTypeKind(type, kind, index));
+        int tempNum = 0;
+        if (Constants.SymbolKindEnum.ARG.equals(kind)) {
+            argIndex++;
+            tempNum = argIndex;
+        } else if (Constants.SymbolKindEnum.FIELD.equals(kind)) {
+            fieldIndex++;
+            tempNum = fieldIndex;
+        } else if (Constants.SymbolKindEnum.STATIC.equals(kind)) {
+            staticIndex++;
+            tempNum = staticIndex;
+        } else if (Constants.SymbolKindEnum.VAR.equals(kind)) {
+            varIndex++;
+            tempNum = varIndex;
+        }
+        symbolMap.put(name, new SymbolTypeKind(type, kind, tempNum - 1));
     }
 
     private int varCount(Constants.SymbolKindEnum kind) {

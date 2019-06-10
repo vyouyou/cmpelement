@@ -7,8 +7,8 @@ call Main.fillMemory 3
 pop temp 0
 push const 8000
 call Memory.peek 1
-pop local 1
-push local 1
+pop local 0
+push local 0
 call Main.convert 1
 pop temp 0
 push const 0
@@ -16,4 +16,15 @@ return
 function Main.convert 3
 push const 1
 not
+pop local 2
+WHILE_LABEL_0
+push local 2
+neg
+if-goto WHILE_LABEL_END_0
+push local 1
+push const 1
+add
 pop local 1
+push local 0
+call Main.nextMask 1
+pop local 0
