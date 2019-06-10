@@ -72,6 +72,22 @@ public class VMWriter {
         writeToFile(symbolText);
     }
 
+    /**
+     * 数字前面的修饰符  -   neg    ~ not
+     *
+     * @param label
+     */
+    public void writeNumberDecorater(String label) {
+        switch (label) {
+            case "-":
+                writeToFile("not");
+                break;
+            case "~":
+                writeToFile("neg");
+                break;
+        }
+    }
+
     public void writeLabel(String label) {
         writeToFile(label);
     }

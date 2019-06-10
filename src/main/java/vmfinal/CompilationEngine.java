@@ -103,8 +103,14 @@ public class CompilationEngine {
     }
 
     private void addArgs() {
-        SymbolTable tempTable = new SymbolTable();
-        symbolTableStack.push(tempTable);
+        SymbolTable tempTable;
+        if (symbolTableStack.size() == 1) {
+            tempTable = new SymbolTable();
+            symbolTableStack.push(tempTable);
+        } else {
+            tempTable = symbolTableStack.peek();
+            tempTable.startSubroutine();
+        }
         tokenIndex++;
         // (
         while (true) {
@@ -117,7 +123,6 @@ public class CompilationEngine {
             String type = getTokenText();
             String name = getNextTokenText();
             tempTable.define(name, type, Constants.SymbolKindEnum.ARG);
-            tokenIndex++;
         }
         //)
         tokenIndex++;
@@ -163,8 +168,14 @@ public class CompilationEngine {
      * let
      */
     private void compileLet() {
-//        Element letEle = createKeywordElement(KeyWordEnum.LET);
-//        parentEle.add(letEle);
+        String argName = getNextTokenText();
+        if ("[".equals(getNextTokenText())) {
+            compileExpression();
+        }
+        getNextTokenText();
+        compileExpression();
+        pop2Var(argName);
+        tokenIndex++;
 //        do {
 //            String text = getToken().getText();
 //            copyElement(letEle);
@@ -182,7 +193,7 @@ public class CompilationEngine {
      * var
      */
     private int compileVar() {
-        SymbolTable methodSymbol = new SymbolTable();
+        SymbolTable methodSymbol = symbolTableStack.peek();
         int argsNum = 0;
         while (KeyWordEnum.VAR.getCode().equals(getTokenText())) {
             tokenIndex++;
@@ -332,19 +343,37 @@ public class CompilationEngine {
             // 如  a() a.b() a[i]
             String nextText = getNextTokenText();
             if ("(".equals(nextText) || ".".equals(nextText)) {
+                tokenIndex--;
                 this.compilePartCall(text);
 //                copyElement(termEle);
             } else if ("[".equals(nextText)) {
                 compileExpression();
                 if ("]".equals(getNextTokenText())) {
                 } else {
+
                 }
+
+            }
+            // 处理变量
+            else {
+                tokenIndex--;
+                push2Var(text);
+            }
+        } else if (type.equals(TokenTypeEnum.KEYWORD)) {
+            if ("null".equals(text) || "false".equals(text)) {
+                vmWriter.writePush(Constants.MemoryKindEnum.CONST, 0);
+            }
+            if ("true".equals(text)) {
+                vmWriter.writePush(Constants.MemoryKindEnum.CONST, 1);
+                vmWriter.writeNumberDecorater("-");
             }
         } else if (type.equals(TokenTypeEnum.STRING_CONST) ||
                 type.equals(TokenTypeEnum.INT_CONST)) {
             vmWriter.writePush(Constants.MemoryKindEnum.CONST, getTokenText());
         } else if ("-".equals(text) || "~".equals(text)) {
+            tokenIndex++;
             compileTerm();
+            vmWriter.writeNumberDecorater(text);
         } else if ("(".equals(text)) {
             tokenIndex++;
             compileExpression();
@@ -383,6 +412,29 @@ public class CompilationEngine {
         return DocumentHelper.createElement(keyWordEnum.getTagName());
     }
 
+    private SymbolTable.SymbolTypeKind getSymbolTypeKind(String name) {
+        SymbolTable topTable = symbolTableStack.peek();
+        SymbolTable bottomTable = symbolTableStack.firstElement();
+        SymbolTable.SymbolTypeKind kind = topTable.getByName(name);
+        if (kind == null) {
+            kind = bottomTable.getByName(name);
+            if (kind == null) {
+                throw new CompileException("找不到对应的符号:" + name);
+            }
+        }
+        return kind;
+    }
+
+    private void pop2Var(String name) {
+        SymbolTable.SymbolTypeKind kind = getSymbolTypeKind(name);
+        vmWriter.writePop(memoryKindMap(kind.getKind()), kind.getOrder());
+    }
+
+    private void push2Var(String name) {
+        SymbolTable.SymbolTypeKind kind = getSymbolTypeKind(name);
+        vmWriter.writePush(memoryKindMap(kind.getKind()), kind.getOrder());
+    }
+
     private void copyElement(Element parentEle) {
 //        parentEle.add(getElementByIndex(nodeIndex++));
     }
@@ -398,6 +450,10 @@ public class CompilationEngine {
         return tokens.get(tokenIndex).getType();
     }
 
+    private String getTokenText(int offset) {
+        return tokens.get(tokenIndex + offset).getText();
+    }
+
     private String getTokenText() {
         return tokens.get(tokenIndex).getText();
     }
@@ -408,6 +464,20 @@ public class CompilationEngine {
 
     private Integer getTokenLineNum() {
         return tokens.get(tokenIndex).getLineNum();
+    }
+
+    private Constants.MemoryKindEnum memoryKindMap(Constants.SymbolKindEnum symbolKind) {
+        switch (symbolKind) {
+            case VAR:
+                return Constants.MemoryKindEnum.LOCAL;
+            case ARG:
+                return Constants.MemoryKindEnum.ARG;
+            case STATIC:
+                return Constants.MemoryKindEnum.STATIC;
+            case FIELD:
+                return Constants.MemoryKindEnum.THIS;
+        }
+        return null;
     }
 
 }

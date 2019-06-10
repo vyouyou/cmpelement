@@ -1,0 +1,19 @@
+function Main.main 1
+push const 8001
+push const 16
+push const 1
+not
+call Main.fillMemory 3
+pop temp 0
+push const 8000
+call Memory.peek 1
+pop local 1
+push local 1
+call Main.convert 1
+pop temp 0
+push const 0
+return
+function Main.convert 3
+push const 1
+not
+pop local 1

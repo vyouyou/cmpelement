@@ -44,7 +44,8 @@ public class SymbolTable {
      */
     public void define(String name, String type, Constants.SymbolKindEnum kind) {
         Integer index = switchIndexByKind(kind);
-        symbolMap.put(name, new SymbolTypeKind(type, kind, index++));
+        index += 1;
+        symbolMap.put(name, new SymbolTypeKind(type, kind, index));
     }
 
     private int varCount(Constants.SymbolKindEnum kind) {
@@ -59,12 +60,16 @@ public class SymbolTable {
         return typeKind.getKind();
     }
 
-    private String typeOf(String name) {
+    public String typeOf(String name) {
         SymbolTypeKind typeKind = symbolMap.get(name);
         if (null == typeKind) {
             throw new CompileException("不存在该name");
         }
         return typeKind.getType();
+    }
+
+    public SymbolTypeKind getByName(String name) {
+        return symbolMap.get(name);
     }
 
     /**
@@ -94,6 +99,7 @@ public class SymbolTable {
             throw new CompileException("获取到错误的kind");
         }
     }
+
 
     @Data
     @AllArgsConstructor
