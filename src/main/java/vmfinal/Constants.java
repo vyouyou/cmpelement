@@ -26,8 +26,8 @@ public class Constants {
     }
 
     public enum MemoryKindEnum {
-        CONST("const"),
-        ARG("arg"),
+        CONST("constant"),
+        ARG("argument"),
         LOCAL("local"),
         STATIC("static"),
         THIS("this"),

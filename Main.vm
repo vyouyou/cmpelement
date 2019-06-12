@@ -1,10 +1,9 @@
-function Main.main 0
-push const 1
-push const 2
-push const 3
-call Math.multiply 2
-add
-call Output.printInt 1
+function Main.main 1
+call SquareGame.new 1
+pop local 0
+call game.run 1
 pop temp 0
-push const 0
+call game.dispose 1
+pop temp 0
+push constant 0
 return

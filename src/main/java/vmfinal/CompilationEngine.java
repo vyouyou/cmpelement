@@ -36,11 +36,22 @@ public class CompilationEngine {
     /**
      * if label 第几个
      */
-    private int ifLabelIndex = 0;
+    private int ifTrueIndex = 0;
+    /**
+     * if false label
+     */
+    private int ifFalseIndex = 0;
+    /**
+     * if end label
+     */
+    private int ifEndIndex = 0;
 
-    private final static String IF_LABEL = "IF_LABEL_";
+    private final static String IF_TRUE = "IF_TRUE_";
 
-    private final static String IF_LABEL_END = "IF_LABEL_END_";
+    private final static String IF_FALSE = "IF_FALSE_";
+
+    private final static String IF_END = "IF_END_";
+
 
     public CompilationEngine(List<TokenWithLineNumber> tokens, String target) {
         symbolTableStack = new Stack<>();
@@ -109,6 +120,24 @@ public class CompilationEngine {
         int argsNum = compileVar();
         vmWriter.writeFunction(methodName, argsNum);
         compileStatementList();
+        /**
+         *  function int nextMask(int mask) {
+         *     	if (mask = 0) {
+         *     	    return 1;
+         *                }
+         *     	else {
+         * 	    return mask * 2;
+         *        }
+         *     }
+         *     遇到了形如这样的 会读到 } 所以加上此段代码
+         */
+        //TODO 待优化
+        while (true) {
+            if (!"}".equals(getNextTokenText())) {
+                tokenIndex--;
+                break;
+            }
+        }
     }
 
     private void addArgs() {
@@ -229,6 +258,7 @@ public class CompilationEngine {
         compileStatementList();
         vmWriter.writeGoto(startLabel);
         vmWriter.writeLabel(endLabel);
+        tokenIndex += 2;
         whileLabelIndex++;
     }
 
@@ -239,26 +269,48 @@ public class CompilationEngine {
         if (";".equals(getNextTokenText())) {
             vmWriter.writePush(Constants.MemoryKindEnum.CONST, 0);
             tokenIndex++;
+        } else {
+            compileExpression();
+            tokenIndex++;
         }
         vmWriter.writeReturn();
         tokenIndex++;
+        if (";".equals(getTokenText())) {
+            tokenIndex++;
+        }
     }
 
     /**
      * if
      */
     private void compileIf() {
-        // if  (
-        // )  {
-        // }
-        //compile else
-//        if (KeyWordEnum.ELSE.getCode().equals(getToken().getText())) {
-//            // else {
-//            copyElement(ifEle, 2);
-//            compileStatementList();
-//            // }
-//            copyElement(ifEle);
-//        }
+        String ifTagTextStart = IF_TRUE + ifTrueIndex++;
+        String ifTagTextFalse = IF_FALSE + ifFalseIndex++;
+        tokenIndex += 2;
+        compileExpression();
+        // 处理 )
+        tokenIndex++;
+        vmWriter.writeIf(ifTagTextStart);
+        vmWriter.writeGoto(ifTagTextFalse);
+        tokenIndex += 2;
+        vmWriter.writeLabel(ifTagTextStart);
+        compileStatementList();
+        // 处理}
+        tokenIndex++;
+        if ("else".equals(getNextTokenText())) {
+            // 如果有else，则需要有跳过else这一段的代码
+            String endTagText = IF_END + ifEndIndex++;
+            vmWriter.writeGoto(endTagText);
+            vmWriter.writeLabel(ifTagTextFalse);
+            // 处理 { 并且将指针至于开头
+            tokenIndex += 2;
+            compileStatementList();
+            tokenIndex += 2;
+            vmWriter.writeLabel(endTagText);
+        } else {
+            vmWriter.writeLabel(ifTagTextFalse);
+            tokenIndex--;
+        }
     }
 
 
@@ -279,38 +331,11 @@ public class CompilationEngine {
             } else if (KeyWordEnum.RETURN.getCode().equals(tokenText)) {
                 compileReturn();
             } else {
+                // 当statement结束后 停止在 } 上 因为获取下个方法会用 getNextToken
                 tokenIndex--;
                 break;
             }
         }
-//        for (; ; ) {
-//            vmparse.CompilationEngine.Token token = getToken(nodeIndex);
-//            if (token.getName().equals(TokenTypeEnum.KEYWORD.getCode())) {
-//                String text = token.getText();
-//                if (text.equals(KeyWordEnum.LET.getCode())) {
-//                    compileLet(statementListEle);
-//                } else if (text.equals(KeyWordEnum.VAR.getCode())) {
-//                    compileVar(statementListEle);
-//                } else if (text.equals(KeyWordEnum.DO.getCode())) {
-//                    compileDo(statementListEle);
-//                } else if (text.equals(KeyWordEnum.IF.getCode())) {
-//                    compileIf(statementListEle);
-//                } else if (text.equals(KeyWordEnum.WHILE.getCode())) {
-//                    compileWhile(statementListEle);
-//                } else if (text.equals(KeyWordEnum.RETURN.getCode())) {
-//                    compileReturn(statementListEle);
-//                } else {
-//                    System.out.println("遇到无法识别的关键字");
-//                    break;
-//                }
-//            } else if ("}".equals(token.getText())) {
-//                System.out.println("statement parse end");
-//                break;
-//            } else {
-//                FileUtils.writeIntoXml("Main.xml", targetDocument);
-//                throw new RuntimeException("遇到不为keyword的节点" + nodeIndex + getToken().getText() + getToken().getName());
-//            }
-//        }
     }
 
     private int compileExpressionList() {
@@ -329,7 +354,7 @@ public class CompilationEngine {
     private void compileExpression() {
         compileTerm();
         while (true) {
-            String mathSymbol = getNextTokenText();
+            String mathSymbol = getTokenText();
             if (!Constants.MATH_PATTERN.contains(mathSymbol)) {
                 tokenIndex--;
                 break;
@@ -366,7 +391,6 @@ public class CompilationEngine {
             }
             // 处理变量
             else {
-                tokenIndex--;
                 push2Var(text);
             }
         } else if (type.equals(TokenTypeEnum.KEYWORD)) {
@@ -374,13 +398,14 @@ public class CompilationEngine {
                 vmWriter.writePush(Constants.MemoryKindEnum.CONST, 0);
             }
             if ("true".equals(text)) {
-                vmWriter.writePush(Constants.MemoryKindEnum.CONST, 1);
-                vmWriter.writeNumberDecorater("-");
+                vmWriter.writePush(Constants.MemoryKindEnum.CONST, 0);
+                vmWriter.writeNumberDecorater("~");
             }
             tokenIndex++;
         } else if (type.equals(TokenTypeEnum.STRING_CONST) ||
                 type.equals(TokenTypeEnum.INT_CONST)) {
             vmWriter.writePush(Constants.MemoryKindEnum.CONST, getTokenText());
+            tokenIndex++;
         } else if ("-".equals(text) || "~".equals(text)) {
             tokenIndex++;
             compileTerm();
@@ -389,6 +414,7 @@ public class CompilationEngine {
             tokenIndex++;
             compileExpression();
             if (")".equals(getNextTokenText())) {
+                tokenIndex++;
             } else {
                 System.out.println("can not get )");
             }
@@ -470,6 +496,9 @@ public class CompilationEngine {
     }
 
     private String getNextTokenText() {
+        if (tokenIndex == tokens.size() - 1) {
+            return "";
+        }
         return tokens.get(++tokenIndex).getText();
     }
 

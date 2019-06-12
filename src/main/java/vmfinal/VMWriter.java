@@ -66,6 +66,18 @@ public class VMWriter {
             case "/":
                 symbolText = "call Math.divide 2";
                 break;
+            case ">":
+                symbolText = "gt";
+                break;
+            case "<":
+                symbolText = "lt";
+                break;
+            case "&":
+                symbolText = "and";
+                break;
+            case "=":
+                symbolText = "eq";
+                break;
             default:
                 symbolText = "";
         }
@@ -80,16 +92,16 @@ public class VMWriter {
     public void writeNumberDecorater(String label) {
         switch (label) {
             case "-":
-                writeToFile("not");
+                writeToFile("neg");
                 break;
             case "~":
-                writeToFile("neg");
+                writeToFile("not");
                 break;
         }
     }
 
     public void writeLabel(String label) {
-        writeToFile(label);
+        writeToFile("label " + label);
     }
 
     public void writeGoto(String label) {
