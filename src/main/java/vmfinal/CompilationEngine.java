@@ -51,6 +51,10 @@ public class CompilationEngine {
     private final static String IF_FALSE = "IF_FALSE_";
 
     private final static String IF_END = "IF_END_";
+    /**
+     * 当前方法类型  constructor method  function
+     */
+    private String functionType;
 
 
     public CompilationEngine(List<TokenWithLineNumber> tokens, String target) {
@@ -67,7 +71,8 @@ public class CompilationEngine {
                 KeyWordEnum.FUNCTION.getCode().equals(nextTokenText) ||
                 KeyWordEnum.METHOD.getCode().equals(nextTokenText)
         ) {
-            compileSubroutine();
+            functionType = nextTokenText;
+            compileSubroutine(nextTokenText);
             nextTokenText = getNextTokenText();
         }
         vmWriter.close();
@@ -91,6 +96,7 @@ public class CompilationEngine {
      */
     private void compileClassVarDec() {
         SymbolTable classSymbolTable = new SymbolTable();
+        tokenIndex++;
         while (KeyWordEnum.STATIC.getCode().equals(getTokenText())
                 || KeyWordEnum.FIELD.getCode().equals(getTokenText())) {
             String keyword = getTokenText();
@@ -100,18 +106,24 @@ public class CompilationEngine {
                 String identify = getTokenText();
                 classSymbolTable.define(identify, type, vmfinal.Constants.SymbolKindEnum.getByCode(keyword));
                 tokenIndex++;
-                if (";".equals(getTokenText())) {
+                String nextText = getTokenText();
+                if (",".equals(nextText)) {
+                    tokenIndex++;
+                }
+                if (";".equals(nextText)) {
+                    tokenIndex++;
                     break;
                 }
             }
         }
         symbolTableStack.push(classSymbolTable);
+        tokenIndex--;
     }
 
     /**
      * 编译方法
      */
-    private void compileSubroutine() {
+    private void compileSubroutine(String tokenText) {
         tokenIndex += 2;
         String methodName = getTokenText();
         addArgs();
@@ -119,6 +131,15 @@ public class CompilationEngine {
         tokenIndex++;
         int argsNum = compileVar();
         vmWriter.writeFunction(methodName, argsNum);
+        if (tokenText.equals(KeyWordEnum.CONSTRUCTOR.getCode())) {
+            int fieldNum = symbolTableStack.firstElement().switchIndexByKind(Constants.SymbolKindEnum.FIELD);
+            vmWriter.writePush(Constants.MemoryKindEnum.CONST, fieldNum);
+            vmWriter.writeCall("Memory.alloc", 1);
+            vmWriter.writePop(Constants.MemoryKindEnum.POINTER, 0);
+        } else if (tokenText.equals(KeyWordEnum.METHOD.getCode())) {
+            vmWriter.writePush(Constants.MemoryKindEnum.ARG, 0);
+            vmWriter.writePop(Constants.MemoryKindEnum.POINTER, 0);
+        }
         compileStatementList();
         /**
          *  function int nextMask(int mask) {
@@ -309,7 +330,6 @@ public class CompilationEngine {
             vmWriter.writeLabel(endTagText);
         } else {
             vmWriter.writeLabel(ifTagTextFalse);
-            tokenIndex--;
         }
     }
 
@@ -401,6 +421,10 @@ public class CompilationEngine {
                 vmWriter.writePush(Constants.MemoryKindEnum.CONST, 0);
                 vmWriter.writeNumberDecorater("~");
             }
+            // 处理this关键字
+            if ("this".equals(text)) {
+                vmWriter.writePush(Constants.MemoryKindEnum.POINTER, 0);
+            }
             tokenIndex++;
         } else if (type.equals(TokenTypeEnum.STRING_CONST) ||
                 type.equals(TokenTypeEnum.INT_CONST)) {
@@ -427,10 +451,18 @@ public class CompilationEngine {
         String text = getNextTokenText();
         int argsNum = 0;
         if ("(".equals(text)) {
-            vmWriter.writePush(Constants.MemoryKindEnum.THIS, 2);
+            vmWriter.writePush(Constants.MemoryKindEnum.POINTER, 0);
+            funcName = className + "." + funcName;
             argsNum = compileExpressionList() + 1;
         } else if (".".equals(text)) {
-            funcName = funcName + "." + getNextTokenText();
+            SymbolTable.SymbolTypeKind kind = getSymbolTypeKind(funcName);
+            // 说明调用 的是一个static方法
+            if (kind == null) {
+                funcName = funcName + "." + getNextTokenText();
+            } else {
+                vmWriter.writePush(memoryKindMap(kind.getKind()), kind.getOrder());
+                funcName = kind.getType() + "." + getNextTokenText();
+            }
             argsNum = compileExpressionList();
         }
         vmWriter.writeCall(funcName, argsNum);
@@ -455,9 +487,6 @@ public class CompilationEngine {
         SymbolTable.SymbolTypeKind kind = topTable.getByName(name);
         if (kind == null) {
             kind = bottomTable.getByName(name);
-            if (kind == null) {
-                throw new CompileException("找不到对应的符号:" + name);
-            }
         }
         return kind;
     }
@@ -471,17 +500,6 @@ public class CompilationEngine {
         SymbolTable.SymbolTypeKind kind = getSymbolTypeKind(name);
         vmWriter.writePush(memoryKindMap(kind.getKind()), kind.getOrder());
     }
-
-    private void copyElement(Element parentEle) {
-//        parentEle.add(getElementByIndex(nodeIndex++));
-    }
-
-    private void copyElement(Element parentEle, int num) {
-        for (int i = 0; i < num; i++) {
-            copyElement(parentEle);
-        }
-    }
-
 
     private TokenTypeEnum getTokenType() {
         return tokens.get(tokenIndex).getType();

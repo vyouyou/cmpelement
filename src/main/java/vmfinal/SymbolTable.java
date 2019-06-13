@@ -98,7 +98,7 @@ public class SymbolTable {
         return switchIndexByKind(typeKind.getKind());
     }
 
-    private Integer switchIndexByKind(Constants.SymbolKindEnum kind) {
+    public Integer switchIndexByKind(Constants.SymbolKindEnum kind) {
         if (Constants.SymbolKindEnum.ARG.equals(kind)) {
             return argIndex;
         } else if (Constants.SymbolKindEnum.FIELD.equals(kind)) {

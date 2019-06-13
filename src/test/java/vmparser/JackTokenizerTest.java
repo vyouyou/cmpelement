@@ -10,6 +10,6 @@ import vmparse.JackTokenizer;
 public class JackTokenizerTest {
     @Test
     public void genTokenTest(){
-        JackTokenizer jackTokenizer = new JackTokenizer("D:\\javaprj\\cmpelement\\src\\test\\resource\\Main.jack");
+        JackTokenizer jackTokenizer = new JackTokenizer("D:\\javaprj\\cmpelement\\src\\test\\resource\\Main.jackt");
     }
 }

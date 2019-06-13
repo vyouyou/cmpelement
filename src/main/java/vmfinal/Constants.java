@@ -21,7 +21,7 @@ public class Constants {
         }
 
         public static SymbolKindEnum getByCode(String code) {
-            return SymbolKindEnum.valueOf(code);
+            return SymbolKindEnum.valueOf(code.toUpperCase());
         }
     }
 
