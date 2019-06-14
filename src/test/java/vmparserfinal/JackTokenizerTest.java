@@ -41,7 +41,7 @@ public class JackTokenizerTest {
 
     @Test
     public void average() {
-
+        compileDirectory("D:\\javaprj\\cmpelement\\src\\test\\resource\\Average");
     }
 
     @Test

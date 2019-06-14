@@ -1,11 +1,13 @@
 package vmfinal;
 
+import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import vmparse.constants.KeyWordEnum;
 import vmparse.constants.TokenTypeEnum;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Stack;
 
 /**
@@ -229,11 +231,24 @@ public class CompilationEngine {
     private void compileLet() {
         String argName = getNextTokenText();
         if ("[".equals(getNextTokenText())) {
+            tokenIndex++;
             compileExpression();
+            if ("]".equals(getNextTokenText()) && getSymbolTypeKind(argName) != null) {
+                SymbolTable.SymbolTypeKind symbolTypeKind = getSymbolTypeKind(argName);
+                vmWriter.writePush(memoryKindMap(symbolTypeKind.getKind()), symbolTypeKind.getOrder());
+                vmWriter.writeArithmetic("+");
+                tokenIndex += 2;
+                compileExpression();
+                vmWriter.writePop(Constants.MemoryKindEnum.TEMP, 0);
+                vmWriter.writePop(Constants.MemoryKindEnum.POINTER, 1);
+                vmWriter.writePush(Constants.MemoryKindEnum.TEMP, 0);
+                vmWriter.writePop(Constants.MemoryKindEnum.THAT, 0);
+            }
+        } else {
+            getNextTokenText();
+            compileExpression();
+            pop2Var(argName);
         }
-        getNextTokenText();
-        compileExpression();
-        pop2Var(argName);
         // TODO 这里是一个bug 因为最后可能 当为 n+1这种，最后读不到；
         if (getNextTokenText().equals(";")) {
             tokenIndex++;
@@ -402,8 +417,15 @@ public class CompilationEngine {
                 this.compilePartCall(text);
 //                copyElement(termEle);
             } else if ("[".equals(nextText)) {
+                tokenIndex++;
                 compileExpression();
+                tokenIndex++;
                 if ("]".equals(getNextTokenText())) {
+                    SymbolTable.SymbolTypeKind kind = getSymbolTypeKind(text);
+                    vmWriter.writePush(memoryKindMap(kind.getKind()), kind.getOrder());
+                    vmWriter.writeArithmetic("+");
+                    vmWriter.writePop(Constants.MemoryKindEnum.POINTER, 1);
+                    vmWriter.writePush(Constants.MemoryKindEnum.THAT, 0);
                 } else {
 
                 }
@@ -426,9 +448,21 @@ public class CompilationEngine {
                 vmWriter.writePush(Constants.MemoryKindEnum.POINTER, 0);
             }
             tokenIndex++;
-        } else if (type.equals(TokenTypeEnum.STRING_CONST) ||
-                type.equals(TokenTypeEnum.INT_CONST)) {
+        }
+        // 处理int类型
+        else if (type.equals(TokenTypeEnum.INT_CONST)) {
             vmWriter.writePush(Constants.MemoryKindEnum.CONST, getTokenText());
+            tokenIndex++;
+        }
+        // 处理string类型
+        else if (type.equals(TokenTypeEnum.STRING_CONST)) {
+            char[] charArray = text.toCharArray();
+            vmWriter.writePush(Constants.MemoryKindEnum.CONST, charArray.length);
+            vmWriter.writeCall("String.new", 1);
+            for (char c : charArray) {
+                vmWriter.writePush(Constants.MemoryKindEnum.CONST, (byte) c);
+                vmWriter.writeCall("String.appendChar", 2);
+            }
             tokenIndex++;
         } else if ("-".equals(text) || "~".equals(text)) {
             tokenIndex++;
