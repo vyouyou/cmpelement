@@ -33,6 +33,10 @@ public interface Constants {
      * string pattern
      */
     String STRING_PATTERN = "\".*\"";
+    /**
+     * 字符串匹配
+     */
+    String STRING_SPLIT = "((?<=\"[\\s\\S]{0,10000}\")|(?=\"[\\s\\S]{0,10000}\"))";
 
     Pattern STR_P = Pattern.compile(Constants.STRING_PATTERN);
     /**

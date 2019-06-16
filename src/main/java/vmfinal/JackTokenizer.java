@@ -60,25 +60,27 @@ public class JackTokenizer {
     }
 
     private List<TokenWithLineNumber> genTokens(List<String> stringList) {
-        List<String> tokens = Lists.newArrayList();
         List<TokenWithLineNumber> lineNumberTokenList = Lists.newArrayList();
         for (int i = 0; i < stringList.size(); i++) {
             String item = stringList.get(i);
-            for (String s : item.split(Constants.SYMBOL_SPLIT_PATTERN)) {
-                Matcher matcher = STR_P.matcher(s);
+            //这一遍只是把string const类型分割开
+            List<String> baseStringList = Lists.newArrayList(item.split(Constants.STRING_SPLIT));
+            int finalI = i;
+            baseStringList.forEach(baseString -> {
+                Matcher matcher = STR_P.matcher(baseString);
                 if (matcher.find()) {
-                    lineNumberTokenList.add(new TokenWithLineNumber(s, i));
-                    tokens.add(s);
+                    lineNumberTokenList.add(new TokenWithLineNumber(baseString, finalI));
                 } else {
-                    int finalI = i;
-                    Lists.newArrayList(s.split(" ")).stream().forEach((str) -> {
-                        str = str.trim();
-                        if (StringUtils.isNotEmpty(str)) {
-                            lineNumberTokenList.add(new TokenWithLineNumber(str, finalI));
-                        }
-                    });
+                    for (String s : baseString.split(Constants.SYMBOL_SPLIT_PATTERN)) {
+                        Lists.newArrayList(s.split(" ")).stream().forEach((str) -> {
+                            str = str.trim();
+                            if (StringUtils.isNotEmpty(str)) {
+                                lineNumberTokenList.add(new TokenWithLineNumber(str, finalI));
+                            }
+                        });
+                    }
                 }
-            }
+            });
         }
         return lineNumberTokenList;
     }

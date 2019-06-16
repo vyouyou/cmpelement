@@ -128,7 +128,11 @@ public class CompilationEngine {
     private void compileSubroutine(String tokenText) {
         tokenIndex += 2;
         String methodName = getTokenText();
-        addArgs();
+        if (tokenText.equals(KeyWordEnum.METHOD.getCode())) {
+            addArgs(true);
+        } else {
+            addArgs(false);
+        }
         // 处理  {
         tokenIndex++;
         int argsNum = compileVar();
@@ -163,7 +167,12 @@ public class CompilationEngine {
         }
     }
 
-    private void addArgs() {
+    /**
+     * 添加argument
+     *
+     * @param isMethod 如果是method ，则需要添加this
+     */
+    private void addArgs(boolean isMethod) {
         SymbolTable tempTable;
         if (symbolTableStack.size() == 1) {
             tempTable = new SymbolTable();
@@ -173,6 +182,10 @@ public class CompilationEngine {
             tempTable.startSubroutine();
         }
         tokenIndex++;
+        // 如果是method,则先压入 this
+        if (isMethod) {
+            tempTable.define("this", "", Constants.SymbolKindEnum.ARG);
+        }
         // (
         while (true) {
             if (")".equals(getNextTokenText())) {
@@ -188,27 +201,6 @@ public class CompilationEngine {
         //)
         tokenIndex++;
     }
-
-
-    /**
-     * 编译参数列表 声明方法后面的一系列参数
-     */
-    private int compileParameterList() {
-        tokenIndex++;
-        int number = 0;
-        while (true) {
-            String text = getNextTokenText();
-            if (text.equals(")")) {
-                break;
-            } else if (text.equals(",")) {
-                tokenIndex++;
-            }
-            number++;
-            compileTerm();
-        }
-        return number;
-    }
-
 
     /**
      * do
@@ -249,7 +241,7 @@ public class CompilationEngine {
             compileExpression();
             pop2Var(argName);
         }
-        // TODO 这里是一个bug 因为最后可能 当为 n+1这种，最后读不到；
+        // TODO 这里是一个bug 因为最后可能 当为 n+1这种，最后读不到   '；'
         if (getNextTokenText().equals(";")) {
             tokenIndex++;
         }
@@ -373,8 +365,17 @@ public class CompilationEngine {
         }
     }
 
+    /**
+     * 开始游标要求位于 a() 的a位置处
+     *
+     * @return
+     */
     private int compileExpressionList() {
         int expressSize = 0;
+        if (")".equals(getTokenText(2))) {
+            tokenIndex += 2;
+            return expressSize;
+        }
         while (!")".equals(getNextTokenText())) {
             tokenIndex++;
             compileExpression();
@@ -420,16 +421,17 @@ public class CompilationEngine {
                 tokenIndex++;
                 compileExpression();
                 tokenIndex++;
-                if ("]".equals(getNextTokenText())) {
+                if ("]".equals(getTokenText())) {
                     SymbolTable.SymbolTypeKind kind = getSymbolTypeKind(text);
                     vmWriter.writePush(memoryKindMap(kind.getKind()), kind.getOrder());
                     vmWriter.writeArithmetic("+");
                     vmWriter.writePop(Constants.MemoryKindEnum.POINTER, 1);
                     vmWriter.writePush(Constants.MemoryKindEnum.THAT, 0);
+                    // 将游标移到 ] 下一个
+                    tokenIndex++;
                 } else {
 
                 }
-
             }
             // 处理变量
             else {
@@ -487,17 +489,20 @@ public class CompilationEngine {
         if ("(".equals(text)) {
             vmWriter.writePush(Constants.MemoryKindEnum.POINTER, 0);
             funcName = className + "." + funcName;
+            // 之所以要这么做，因为 compileExpressionList 的开始游标位于 a() 的  a的位置
+            tokenIndex--;
             argsNum = compileExpressionList() + 1;
         } else if (".".equals(text)) {
             SymbolTable.SymbolTypeKind kind = getSymbolTypeKind(funcName);
             // 说明调用 的是一个static方法
             if (kind == null) {
                 funcName = funcName + "." + getNextTokenText();
+                argsNum = compileExpressionList();
             } else {
                 vmWriter.writePush(memoryKindMap(kind.getKind()), kind.getOrder());
                 funcName = kind.getType() + "." + getNextTokenText();
+                argsNum = compileExpressionList() + 1;
             }
-            argsNum = compileExpressionList();
         }
         vmWriter.writeCall(funcName, argsNum);
         // 处理后括号 )

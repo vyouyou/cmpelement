@@ -75,6 +75,9 @@ public class VMWriter {
             case "&":
                 symbolText = "and";
                 break;
+            case "|":
+                symbolText = "or";
+                break;
             case "=":
                 symbolText = "eq";
                 break;

@@ -30,4 +30,9 @@ public class BaseTest {
     public void testIsEmpty() {
         System.out.println(StringUtils.isNotEmpty(""));
     }
+
+    @Test
+    public void testStringSpilt() {
+        String[] sList = "do Output.printString(\"Test 1: expected result: 5; actual result: \");".split("((?<=\"[\\s\\S]{0,10000}\")|(?=\"[\\s\\S]{0,10000}\"))");
+    }
 }

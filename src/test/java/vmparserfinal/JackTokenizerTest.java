@@ -17,41 +17,41 @@ import java.util.List;
 public class JackTokenizerTest {
     @Test
     public void genTokenTest() {
-        JackTokenizer jackTokenizer = new JackTokenizer("D:\\javaprj\\cmpelement\\src\\test\\resource\\Main.jackt");
+        JackTokenizer jackTokenizer = new JackTokenizer("E:\\javaprj\\cmpelement\\src\\test\\resource\\Main.jack");
     }
 
     @Test
     public void sevenTest() {
-        JackTokenizer jackTokenizer = new JackTokenizer("D:\\javaprj\\cmpelement\\src\\test\\resource\\Seven\\Main.jackt");
+        JackTokenizer jackTokenizer = new JackTokenizer("E:\\javaprj\\cmpelement\\src\\test\\resource\\Seven\\Main.jack");
         List<TokenWithLineNumber> tokens = jackTokenizer.getTokenWithLineNumberList();
         new CompilationEngine(tokens, "Seven.vm").startParse();
     }
 
     @Test
     public void convertToBinTest() {
-        JackTokenizer jackTokenizer = new JackTokenizer("D:\\javaprj\\cmpelement\\src\\test\\resource\\ConvertToBin\\Main.jackt");
+        JackTokenizer jackTokenizer = new JackTokenizer("E:\\javaprj\\cmpelement\\src\\test\\resource\\ConvertToBin\\Main.jack");
         List<TokenWithLineNumber> tokens = jackTokenizer.getTokenWithLineNumberList();
         new CompilationEngine(tokens, "ConvertToBin.vm").startParse();
     }
 
     @Test
     public void squareDance() {
-        compileDirectory("D:\\javaprj\\cmpelement\\src\\test\\resource\\Square");
+        compileDirectory("E:\\javaprj\\cmpelement\\src\\test\\resource\\Square");
     }
 
     @Test
     public void average() {
-        compileDirectory("D:\\javaprj\\cmpelement\\src\\test\\resource\\Average");
+        compileDirectory("E:\\javaprj\\cmpelement\\src\\test\\resource\\Average");
     }
 
     @Test
     public void pong() {
-
+        compileDirectory("E:\\javaprj\\cmpelement\\src\\test\\resource\\Pong");
     }
 
     @Test
     public void complexArrays() {
-
+        compileDirectory("E:\\javaprj\\cmpelement\\src\\test\\resource\\ComplexArrays");
     }
 
     private void compileDirectory(String path) {
